@@ -37,8 +37,9 @@ Planned features:
 
 To-do:
 
-- [ ] Upload files
+- [x] Upload files
 - [ ] Backend and database interaction
+- [ ] Simple polished web frontend
 - [ ] Mobile frontend
 
 ---

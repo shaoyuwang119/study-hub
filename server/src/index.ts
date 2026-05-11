@@ -9,19 +9,19 @@ let notes = [
     id: 1,
     title: 'Chemistry Notes',
     author: 'Shaoyu W',
-    imageUrl: 'https://placehold.co/600x400',
+    imageUrl: 'https://placehold.co/100x150',
   },
   {
     id: 2,
     title: 'World History',
     author: 'Shaoyu W',
-    imageUrl: 'https://placehold.co/600x400',
+    imageUrl: 'https://placehold.co/100x150',
   },
   {
     id: 3,
     title: 'Calc',
     author: 'Shaoyu W',
-    imageUrl: 'https://placehold.co/600x400',
+    imageUrl: 'https://placehold.co/100x150',
   },
 ]
 
@@ -34,6 +34,22 @@ app.get('/', (req, res) => {
 
 app.get('/api/notes', (req, res) => {
   res.json(notes)
+})
+
+app.delete('/api/notes/last', (req, res) => {
+  const removedNote = notes.pop()
+
+  if (!removedNote) {
+    return res.status(404).json({
+      error: 'No notes to delete',
+    })
+  }
+
+  res.json({
+    message: 'Last note deleted',
+    deleted: removedNote,
+    notes,
+  })
 })
 
 app.post('/api/notes', (req, res) => {
