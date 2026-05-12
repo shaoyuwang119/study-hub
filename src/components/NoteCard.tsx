@@ -17,6 +17,7 @@ function NoteCard({
   saves,
   color = '#3b82f6',
 }: NoteCardProps) {
+  //console.log('preview url: ' + author)
   return (
     <div className="flex items-start gap-3 w-full h-32 rounded-lg border border-gray-200 bg-white p-4 hover:bg-zinc-50 hover:shadow-xs cursor-pointer transition-shadow duration-300">
       <div

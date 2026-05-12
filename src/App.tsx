@@ -5,7 +5,7 @@ type Note = {
   id: number
   title: string
   author: string
-  imageUrl: string
+  content_url: string
 }
 
 function App() {
@@ -21,20 +21,7 @@ function App() {
       .then((data) => setNotes(data))
   }, [])
 
-  async function removeLastNote() {
-    const res = await fetch('http://localhost:3000/api/notes/last', {
-      method: 'DELETE',
-    })
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      console.log('No notes to delete')
-      return
-    }
-
-    setNotes(data.notes)
-  }
+  console.log(notes)
 
   async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault()
@@ -73,7 +60,7 @@ function App() {
             className="w-full bg-white rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-300"
           />
           <div className="flex gap-x-4">
-            <button className="w-40 text-pink-500 p-2 rounded-md border border-pink-600 bg-pink-white hover:bg-pink-100 cursor-pointer">
+            <button className="w-40 text-pink-500 p-2 rounded-md border border-pink-600 hover:bg-pink-100 cursor-pointer">
               English
             </button>
           </div>
@@ -87,17 +74,17 @@ function App() {
               title={note.title}
               subject={note.title}
               author={note.author}
-              preview={note.imageUrl}
+              preview={note.content_url}
               saves={67}
             />
           ))}
         </div>
-        <button className="w-50 text-white px-4 py-2 rounded-md bg-blue-500 hover:bg-blue-600 cursor-pointer">
+        <button className="w-50 text-white px-4 py-2 rounded-md hover:shadow-2xl bg-blue-500 hover:bg-blue-600 cursor-pointer">
           Upload Notes
         </button>
       </div>
 
-      <aside className="w-96 border-l border-gray-200 bg-zinc-white px-6 py-8">
+      <aside className="w-96 border-l border-gray-200 bg-white px-6 py-8">
         <div className="text-2xl text-zinc-800">My saved</div>
         <div className="flex flex-col items-start mt-4 gap-y-4">
           {notes.map((note, index) => (
@@ -106,52 +93,12 @@ function App() {
               title={note.title}
               subject={note.title}
               author={note.author}
-              preview={note.imageUrl}
+              preview={note.content_url}
               saves={67}
             />
           ))}
         </div>
       </aside>
-
-      {/* <form
-        onSubmit={handleSubmit}
-        className="mt-8 space-y-4 max-w-md text-white"
-      >
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Note title"
-          className="w-full border border-zinc-300 rounded-lg p-2 text-black"
-        />
-
-        <input
-          value={author}
-          onChange={(e) => setAuthor(e.target.value)}
-          placeholder="Author"
-          className="w-full border border-zinc-300 rounded-lg p-2 text-black"
-        />
-
-        <input
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          placeholder="Image URL"
-          className="w-full border border-zinc-300 rounded-lg p-2 text-black"
-        />
-
-        
-      </form>
-
-      <div className="mt-2 space-y-2 flex flex-col">
-        <button
-          onClick={removeLastNote}
-          className="rounded-lg w-50 bg-red-500 px-4 py-2 hover:bg-red-600 active:bg-red-500 cursor-pointer"
-        >
-          Remove Last Note
-        </button>
-        <button className="w-50 text-black px-4 py-2 rounded-md border-2 border-blue-600 hover:bg-blue-500 active:bg-white cursor-pointer">
-          Browse Library
-        </button>
-      </div> */}
     </div>
   )
 }
