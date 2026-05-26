@@ -1,5 +1,8 @@
 ﻿import { useState } from 'react'
 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faXmark } from '@fortawesome/free-solid-svg-icons'
+
 type UploadModalProps = {
   open: boolean
   onSubmit: (data: {
@@ -29,7 +32,7 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
             onClick={onClose}
             className="cursor-pointer text-xl text-gray-500 hover:text-black"
           >
-            ✕
+            <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
 
