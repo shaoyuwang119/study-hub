@@ -1,7 +1,7 @@
-﻿// Type definition for a Note object
-export type Note = {
+﻿export type Note = {
   id: number
   title: string
+  subject: string
   author: string
   content_url: string
   saves: number

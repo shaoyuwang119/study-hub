@@ -72,7 +72,7 @@ function App() {
             <NoteCard
               key={index}
               title={note.title}
-              subject={note.title}
+              subject={note.subject}
               author={note.author}
               preview={note.content_url}
               saves={note.saves}
