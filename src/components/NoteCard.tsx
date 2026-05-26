@@ -1,27 +1,20 @@
-﻿type NoteCardProps = {
-  title: string
-  subject: string
-  author: string
+﻿import type { Note } from './Types'
+
+type NoteCardProps = {
+  note: Note
   preview: string
-  saves: number
   color?: string
 }
 
 const fallbackImg = 'https://placehold.co/100x150/?text=No\\nPreview'
 
-function NoteCard({
-  title,
-  subject,
-  author,
-  preview,
-  saves,
-  color = '#3b82f6',
-}: NoteCardProps) {
+function NoteCard({ note, preview, color = '#3b82f6' }: NoteCardProps) {
   //console.log('preview url: ' + author)
+  preview = note.content_url
   return (
-    <div className="flex items-start gap-3 w-full h-32 p-4 rounded-lg border border-gray-200 bg-white hover:bg-zinc-0 hover:shadow-xs cursor-pointer transition-shadow duration-200">
+    <div className="hover:bg-zinc-0 flex h-32 w-full cursor-pointer items-start gap-3 rounded-lg border border-gray-200 bg-white p-4 transition-shadow duration-200 hover:shadow-xs">
       <div
-        className=" h-full w-1 rounded-full"
+        className="h-full w-1 rounded-full"
         style={{ backgroundColor: color }}
       />
 
@@ -34,10 +27,10 @@ function NoteCard({
       />
 
       <div className="flex-1">
-        <h3 className="text-md font-semibold text-gray-900">{title}</h3>
-        <p className="mt-1 text-md text-zinc-400">{subject}</p>
-        <p className="mt-2 text-sm text-zinc-400">
-          {author} · {saves} saves
+        <h3 className="text-md font-semibold text-gray-900">{note.title}</h3>
+        <p className="text-md mt-1 text-gray-400">{note.subject}</p>
+        <p className="mt-2 text-sm text-gray-400">
+          {note.author} · {note.saves} saves
         </p>
       </div>
     </div>

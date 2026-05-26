@@ -5,4 +5,5 @@
   author: string
   content_url: string
   saves: number
+  date: string
 }

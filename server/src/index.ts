@@ -24,17 +24,24 @@ app.get('/api/notes', async (req, res) => {
 })
 
 app.post('/api/notes', async (req, res) => {
-  const { title, author, imageUrl } = req.body
+  console.log('recieved!')
+  const { title, subject, description, url, author } = req.body
+  const content_url = url
+  const saves = 0
 
   const newNote = {
     title,
+    subject,
+    description,
+    content_url,
     author,
-    imageUrl,
+    saves,
   }
 
   const { data, error } = await supabase.from('notes').insert(newNote).select()
 
   if (error) {
+    console.log(error.message)
     return res.status(500).json({ error: error.message })
   }
 
