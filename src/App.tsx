@@ -7,10 +7,6 @@ import UploadModal from './components/UploadModal'
 function App() {
   const [notes, setNotes] = useState<Note[]>([])
 
-  const [title, setTitle] = useState('')
-  const [author, setAuthor] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
-
   const [showUpload, setShowUpload] = useState(false)
 
   useEffect(() => {
@@ -57,7 +53,7 @@ function App() {
           <div className="text-4xl font-medium text-zinc-800">Home</div>
           <button
             onClick={() => setShowUpload(true)}
-            className="transition-shadows w-40 cursor-pointer rounded-md bg-blue-500 px-4 py-2 text-white duration-200 hover:bg-blue-600/90 hover:shadow-sm"
+            className="transition-shadows w-40 cursor-pointer rounded-md bg-blue-500 px-4 py-2 text-white duration-200 hover:bg-blue-600 hover:shadow-sm"
           >
             Upload Notes
           </button>
