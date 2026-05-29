@@ -50,7 +50,7 @@ function App() {
 
       <div className="flex-1 flex-col bg-zinc-50 p-6">
         <div className="mb-4 flex flex-row justify-between">
-          <div className="text-4xl font-medium text-zinc-800">Home</div>
+          <div className="text-4xl font-medium text-zinc-900">Home</div>
           <button
             onClick={() => setShowUpload(true)}
             className="transition-shadows w-40 cursor-pointer rounded-md bg-blue-500 px-4 py-2 text-white duration-200 hover:bg-blue-600 hover:shadow-sm"

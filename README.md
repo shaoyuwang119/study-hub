@@ -66,6 +66,16 @@ study-hub/
 
 ## Getting Started
 
+Because this project runs on React, it uses the Vite development tool to build and bundle files.
+
+### Clone the repo
+
+```bash
+git clone https://github.com/shaoyuwang119/study-hub
+```
+
+Or use the VSC git GUI.
+
 ### Install dependencies
 
 Frontend:
@@ -91,6 +101,8 @@ From the root folder:
 npm run start
 ```
 
+This will get Vite to build the project and host the client at port `5173` by default.
+
 Frontend:
 
 ```txt
@@ -109,6 +121,14 @@ http://localhost:3000
 
 ### Get Notes
 
+API Location:
+
+```txt
+http://localhost:3000/api/notes
+```
+
+Get Notes:
+
 ```txt
 GET /api/notes
 ```
@@ -121,7 +141,7 @@ Example response:
     "id": 1,
     "title": "AP Chemistry Notes",
     "author": "Shaoyu",
-    "imageUrl": "https://placehold.co/600x400"
+    "url": "https://placehold.co/600x400"
   }
 ]
 ```
