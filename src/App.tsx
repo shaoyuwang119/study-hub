@@ -1,19 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Rightbar, Sidebar, NoteCard } from './components'
+import ExplorePage from './components/ExplorePage'
 
 import type { Note } from './components/Types'
 import UploadModal from './components/UploadModal'
 
 function App() {
   const [notes, setNotes] = useState<Note[]>([])
-
   const [showUpload, setShowUpload] = useState(false)
+  const [currentPage, setCurrentPage] = useState('home')
 
   useEffect(() => {
     fetchNotes()
   }, [])
-
-  console.log(notes)
 
   const fetchNotes = async () => {
     const res = await fetch('http://localhost:3000/api/notes')
@@ -28,8 +27,6 @@ function App() {
     url: string
     author: string
   }) => {
-    console.log('Sending to backend:', newNote)
-
     const res = await fetch('http://localhost:3000/api/notes', {
       method: 'POST',
       headers: {
@@ -39,15 +36,16 @@ function App() {
     })
 
     const savedNote: Note = await res.json()
-    console.log(savedNote)
-
     setNotes((prev) => [...prev, savedNote])
   }
 
-  return (
-    <div className="flex min-h-screen font-sans">
-      <Sidebar />
+  const renderPage = () => {
+    if (currentPage === 'explore') {
+      return <ExplorePage />
+    }
 
+    // Default: home page
+    return (
       <div className="flex-1 flex-col bg-zinc-50 p-6">
         <div className="mb-4 flex flex-row justify-between">
           <div className="text-4xl font-medium text-zinc-900">Home</div>
@@ -58,6 +56,7 @@ function App() {
             Upload Notes
           </button>
         </div>
+
         <UploadModal
           open={showUpload}
           onSubmit={handleSubmit}
@@ -69,11 +68,6 @@ function App() {
             placeholder="Search notes, classes, subjects..."
             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-gray-300 focus:outline-none"
           />
-          <div className="flex gap-x-4">
-            {/* <button className="w-40 text-pink-500 p-2 rounded-md border border-pink-600 hover:bg-pink-100 cursor-pointer">
-              English
-            </button> */}
-          </div>
         </div>
 
         <div className="flex flex-col items-start gap-y-2">
@@ -83,7 +77,13 @@ function App() {
           ))}
         </div>
       </div>
+    )
+  }
 
+  return (
+    <div className="flex min-h-screen font-sans">
+      <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
+      {renderPage()}
       <Rightbar notes={notes} />
     </div>
   )
