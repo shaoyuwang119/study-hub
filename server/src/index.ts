@@ -23,6 +23,27 @@ app.get('/api/notes', async (req, res) => {
   res.json(data)
 })
 
+app.get('/api/notes/:id', async (req, res) => {
+  const { id } = req.params
+
+  const { data, error } = await supabase
+    .from('notes')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) {
+    return res.status(404).json({
+      message: 'Page not found',
+    })
+  }
+
+  res.json({
+    message: 'Note fetched successfully',
+    data,
+  })
+})
+
 app.post('/api/notes', async (req, res) => {
   console.log('recieved!')
   const { title, subject, description, url, author } = req.body
