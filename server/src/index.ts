@@ -45,7 +45,6 @@ app.get('/api/notes/:id', async (req, res) => {
 })
 
 app.post('/api/notes', async (req, res) => {
-  console.log('recieved!')
   const { title, subject, description, url, author } = req.body
   const content_url = url
   const saves = 0
@@ -72,15 +71,26 @@ app.post('/api/notes', async (req, res) => {
 app.delete('/api/notes/:id', async (req, res) => {
   const { id } = req.params
 
-  const { error } = await supabase.from('notes').delete().eq('id', id)
+  const { data, error } = await supabase
+    .from('notes')
+    .delete()
+    .eq('id', id)
+    .select()
 
   if (error) {
-    return res.status(500).json({
+    return res.status(403).json({
+      message: 'Delete failed',
       error: error.message,
     })
   }
 
-  res.status(200).json({
+  if (!data || data.length === 0) {
+    return res.status(404).json({
+      message: 'No note deleted (not found or no permission)',
+    })
+  }
+
+  res.json({
     message: 'Note deleted successfully',
   })
 })

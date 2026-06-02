@@ -37,11 +37,15 @@ Planned features:
 
 To-do:
 
-- [x] Upload files
+- [x] Upload notes
 - [x] Backend and database interaction
-- [ ] Simple polished web frontend
+- [ ] Individual note pages
+- [ ] Upload and host files
+- [ ] Search function
 - [ ] User authentication
+- [ ] Polished web frontend
 - [ ] Mobile frontend
+- [ ] Moderation
 
 ---
 
@@ -162,8 +166,5 @@ This project is intended as:
 
 - Flashcard generation
 - OCR for handwritten notes
-- Real-time collaboration
 - Personalized recommendations
 - Comments and ratings
-- Forums
-- AI-generated summaries (probably not this)
