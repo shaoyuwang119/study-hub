@@ -46,7 +46,7 @@ function NotePage() {
 
         const data = await res.json()
 
-        setNote(data.data)
+        setNote(data)
       } catch (err: any) {
         setError(err.message)
       } finally {

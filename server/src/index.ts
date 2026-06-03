@@ -23,6 +23,13 @@ app.get('/api/notes', async (req, res) => {
   res.json(data)
 })
 
+app.get('/api/notes/search', async (req, res) => {
+  const { q, author } = req.query
+  res.status(404).json({
+    message: 'Search backend not implemented yet',
+  })
+})
+
 app.get('/api/notes/:id', async (req, res) => {
   const { id } = req.params
 
@@ -34,14 +41,11 @@ app.get('/api/notes/:id', async (req, res) => {
 
   if (error) {
     return res.status(404).json({
-      message: 'Page not found',
+      message: 'Page not found!',
     })
   }
 
-  res.json({
-    message: 'Note fetched successfully',
-    data,
-  })
+  res.json(data)
 })
 
 app.post('/api/notes', async (req, res) => {
