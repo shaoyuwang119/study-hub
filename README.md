@@ -43,7 +43,7 @@ To-do:
 - [ ] Upload and host files
 - [ ] Search function
 - [ ] User authentication
-- [ ] Polished web frontend
+- [ ] Polished web frontend (Don't forget CSS variables)
 - [ ] Mobile frontend
 - [ ] Moderation
 
