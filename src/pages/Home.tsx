@@ -68,7 +68,7 @@ function App() {
         <div className="mb-2 space-y-2">
           <input
             placeholder="Search notes, classes, subjects..."
-            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-gray-300 focus:outline-none"
+            className="w-full rounded-lg border border-gray-200 bg-zinc-50 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
           />
           <div className="flex gap-x-4">
             {/* <button className="w-40 text-pink-500 p-2 rounded-md border border-pink-600 hover:bg-pink-100 cursor-pointer">

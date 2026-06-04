@@ -25,9 +25,27 @@ app.get('/api/notes', async (req, res) => {
 
 app.get('/api/notes/search', async (req, res) => {
   const { q, author } = req.query
-  res.status(404).json({
-    message: 'Search backend not implemented yet',
-  })
+
+  let query = supabase.from('notes').select('*')
+
+  if (q) {
+    query = query.ilike('title', `%${q}%`)
+  }
+
+  if (author) {
+    query = query.ilike('author', `%${author}%`)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    return res.status(500).json({
+      message: 'Search failed',
+      error: error.message,
+    })
+  }
+
+  res.json(data)
 })
 
 app.get('/api/notes/:id', async (req, res) => {

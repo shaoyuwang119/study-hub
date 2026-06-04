@@ -56,6 +56,7 @@ function ExplorePage() {
       }
 
       setResults(data)
+      console.log(data)
       setLoading(false)
     } catch (err) {
       if (err instanceof Error) {
@@ -134,7 +135,7 @@ function ExplorePage() {
                     setResults(allNotes)
                     setSearched(false)
                   }}
-                  className="cursor-pointer rounded-lg border border-gray-200 px-4 py-2 text-sm text-zinc-500 transition hover:bg-zinc-100"
+                  className="cursor-pointer rounded-lg border border-gray-200 px-5 py-2 text-sm text-zinc-500 transition hover:bg-zinc-100"
                 >
                   Clear
                 </button>
