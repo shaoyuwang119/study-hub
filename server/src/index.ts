@@ -1,6 +1,6 @@
 ﻿import express from 'express'
 import cors from 'cors'
-import { supabase } from './supabase'
+import { supabase } from './config/supabase'
 
 const app = express()
 const PORT = 3000
@@ -67,8 +67,7 @@ app.get('/api/notes/:id', async (req, res) => {
 })
 
 app.post('/api/notes', async (req, res) => {
-  const { title, subject, description, url, author } = req.body
-  const content_url = url
+  const { title, subject, description, content_url, author } = req.body
   const saves = 0
 
   const newNote = {

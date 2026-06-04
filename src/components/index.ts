@@ -2,3 +2,4 @@
 export { default as Sidebar } from './Sidebar'
 export { default as NoteCard } from './NoteCard'
 export { default as Rightbar } from './Rightbar'
+export { default as UploadModal } from './UploadModal'

@@ -9,7 +9,7 @@ type UploadModalProps = {
     title: string
     subject: string
     description: string
-    url: string
+    file: File
     author: string
   }) => void
   onClose: () => void
@@ -21,7 +21,7 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
   const [title, setTitle] = useState('')
   const [subject, setSubject] = useState('')
   const [description, setDescription] = useState('')
-  const [url, setUrl] = useState('')
+  const [file, setFile] = useState<File | null>(null)
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50">
@@ -40,11 +40,16 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
           onSubmit={(e) => {
             e.preventDefault()
 
+            if (!file) {
+              alert('Please select a file')
+              return
+            }
+
             onSubmit({
               title,
               subject,
               description,
-              url,
+              file,
               author: 'John D',
             })
             onClose()
@@ -67,11 +72,32 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
           />
           <input
             type="text"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="Url"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description"
             className="rounded-lg border border-gray-200 p-2 focus:border-gray-300 focus:outline-none"
           />
+
+          <input
+            id="fileInput"
+            type="file"
+            accept=".pdf,.png,.jpg,.jpeg.,.docx"
+            onChange={(e) => {
+              const selected = e.target.files?.[0] ?? null
+              setFile(selected)
+            }}
+            className="hidden"
+          />
+          <label
+            htmlFor="fileInput"
+            className="flex h-25 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 px-4 py-2 text-gray-500 hover:bg-gray-100"
+          >
+            Choose File
+          </label>
+
+          {file && (
+            <p className="text-xs text-zinc-500">Selected: {file.name}</p>
+          )}
 
           <button
             type="submit"

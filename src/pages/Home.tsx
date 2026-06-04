@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { Rightbar, Sidebar, NoteCard } from '../components'
+import { supabase } from '../lib/supabase'
+
+import { Rightbar, Sidebar, NoteCard, UploadModal } from '../components'
 import type { Note } from '../components/Types'
-import UploadModal from '../components/UploadModal'
 
 function App() {
   const [notes, setNotes] = useState<Note[]>([])
@@ -22,27 +23,72 @@ function App() {
     setNotes(data)
   }
 
+  const uploadFile = async (file: File) => {
+    const filePath = `${Date.now()}-${file.name}`
+
+    const { error } = await supabase.storage
+      .from('note-files')
+      .upload(filePath, file)
+
+    if (error) throw error
+
+    const { data } = supabase.storage.from('note-files').getPublicUrl(filePath)
+
+    return [filePath, data.publicUrl]
+  }
+
   const handleSubmit = async (newNote: {
     title: string
     subject: string
     description: string
-    url: string
+    file: File
     author: string
   }) => {
-    console.log('Sending to backend:', newNote)
+    try {
+      // Upload file to Supabase Storage
+      const [fileName, fileUrl] = await uploadFile(newNote.file)
+      console.log(fileUrl)
 
-    const res = await fetch('http://localhost:3000/api/notes', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(newNote),
-    })
+      // Create note in backend
+      const res = await fetch('http://localhost:3000/api/notes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: newNote.title,
+          subject: newNote.subject,
+          description: newNote.description,
+          author: newNote.author,
+          content_url: fileUrl,
+        }),
+      })
 
-    const savedNote: Note = await res.json()
-    console.log(savedNote)
+      if (!res.ok) throw new Error('Failed to creat note')
 
-    setNotes((prev) => [...prev, savedNote])
+      const savedNote: Note = await res.json()
+
+      // Insert file metadata into "files" table
+      const { error } = await supabase
+        .from('files')
+        .insert({
+          user_id: 1, // TODO: USER AUTH ID
+          note_id: savedNote.id,
+          file_name: fileName,
+          file_url: fileUrl,
+          file_type: newNote.file.type,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Update UI
+      setNotes((prev) => [...prev, savedNote])
+      setShowUpload(false)
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   return (
@@ -80,8 +126,12 @@ function App() {
         <div className="flex flex-col items-start gap-y-2">
           <div className="mx-1 text-xl">Continue studying</div>
           {notes.map((note) => (
-            <Link to={`/notes/${note.id}`} className="block w-full">
-              <NoteCard key={note.id} note={note} preview={note.content_url} />
+            <Link
+              key={note.id}
+              to={`/notes/${note.id}`}
+              className="block w-full"
+            >
+              <NoteCard note={note} preview={note.content_url} />
             </Link>
           ))}
         </div>
