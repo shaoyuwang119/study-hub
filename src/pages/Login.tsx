@@ -1,6 +1,8 @@
 ﻿import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
+import { Header } from '../components'
+
 function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -34,7 +36,9 @@ function Login() {
 
   return (
     <div className="flex h-screen flex-col items-center justify-center bg-zinc-50 font-sans">
-      <div className="mb-6 text-3xl font-semibold text-zinc-900">Study Hub</div>
+      <Header />
+
+      <br></br>
 
       <div className="mb-15 w-full max-w-sm rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
         <div className="mb-6 text-2xl font-medium text-zinc-900">

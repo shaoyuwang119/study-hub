@@ -1,4 +1,6 @@
-﻿import { NavLink } from 'react-router-dom'
+﻿import { NavLink, useNavigate } from 'react-router-dom'
+
+import { supabase } from '../lib/supabase'
 
 type SidebarItem = {
   label: string
@@ -9,10 +11,15 @@ const sidebarItems: SidebarItem[] = [
   { label: 'Home', page: '/' },
   { label: 'Explore', page: '/explore' },
   { label: 'Profile', page: '/profile' },
-  { label: 'Sign-in', page: '/login' },
 ]
 
 function Sidebar() {
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    navigate('/login')
+  }
   return (
     <aside className="sticky top-0 h-screen w-64 border-r border-gray-200 bg-white px-4 py-5">
       <div className="mb-8 flex flex-col gap-y-2">
@@ -20,10 +27,11 @@ function Sidebar() {
         <p className="text-sm text-zinc-500">Find better notes.</p>
       </div>
 
-      <nav className="spacy-y-1">
+      <nav className="space-y-1">
         {/* TODO: add icons */}
         {sidebarItems.map((item) => (
           <NavLink
+            key={item.page}
             to={item.page}
             className={({ isActive }) =>
               `block rounded-md px-3 py-2 text-sm ${
@@ -36,9 +44,14 @@ function Sidebar() {
             {item.label}
           </NavLink>
         ))}
-      </nav>
 
-      <div>hi</div>
+        <button
+          onClick={handleLogout}
+          className="cursor-pointer rounded-md px-3 py-2 text-left text-sm font-medium text-zinc-600 hover:bg-zinc-100"
+        >
+          Log out
+        </button>
+      </nav>
     </aside>
   )
 }

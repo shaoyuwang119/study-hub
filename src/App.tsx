@@ -3,7 +3,8 @@ import Home from './pages/Home'
 import NotePage from './pages/NotePage'
 import ExplorePage from './pages/ExplorePage'
 import Login from './pages/Login'
-import ProtectedRoute from './components/ProtectedRoute'
+
+import { ProtectedRoute } from './components'
 
 function App() {
   return (
