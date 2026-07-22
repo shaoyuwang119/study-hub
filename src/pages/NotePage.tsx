@@ -73,6 +73,7 @@ function NotePage() {
       <h1 className="mb-4 text-3xl font-bold">{note.title}</h1>
       <h2>Author: {note.author}</h2>
       <p>Description: {note.description}</p>
+      <img src={note.content_url} className="my-2 border"></img>
       <button
         onClick={handleDelete}
         className="transition-shadows w-40 cursor-pointer rounded-md bg-red-500 px-4 py-2 text-white duration-200 hover:bg-red-600 hover:shadow-sm"

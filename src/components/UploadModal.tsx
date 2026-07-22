@@ -41,7 +41,7 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
             e.preventDefault()
 
             if (!file) {
-              alert('Please select a file')
+              alert('Please select a file.')
               return
             }
 
@@ -84,7 +84,7 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
             accept=".pdf,.png,.jpg,.jpeg.,.docx"
             onChange={(e) => {
               const selected = e.target.files?.[0] ?? null
-              setFile(selected)
+              if (selected !== null) setFile(selected)
             }}
             className="hidden"
           />

@@ -1,6 +1,8 @@
 ﻿import express from 'express'
 import cors from 'cors'
 import { supabase } from './config/supabase'
+import { requireAuth } from './middleware/auth'
+import type { AuthedRequest } from './middleware/auth'
 
 const app = express()
 const PORT = 3000
@@ -66,9 +68,13 @@ app.get('/api/notes/:id', async (req, res) => {
   res.json(data)
 })
 
-app.post('/api/notes', async (req, res) => {
-  const { title, subject, description, content_url, author } = req.body
+app.post('/api/notes', requireAuth, async (req: AuthedRequest, res) => {
+  const { title, subject, description, content_url } = req.body
   const saves = 0
+
+  // Use the verified user's info instead of trusting anything
+  // the client could put in the request body.
+  const author = req.user!.id
 
   const newNote = {
     title,
@@ -89,7 +95,7 @@ app.post('/api/notes', async (req, res) => {
   res.json(data[0])
 })
 
-app.delete('/api/notes/:id', async (req, res) => {
+app.delete('/api/notes/:id', requireAuth, async (req: AuthedRequest, res) => {
   const { id } = req.params
 
   const { data, error } = await supabase

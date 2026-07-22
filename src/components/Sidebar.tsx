@@ -9,6 +9,7 @@ const sidebarItems: SidebarItem[] = [
   { label: 'Home', page: '/' },
   { label: 'Explore', page: '/explore' },
   { label: 'Profile', page: '/profile' },
+  { label: 'Sign-in', page: '/login' },
 ]
 
 function Sidebar() {
@@ -36,6 +37,8 @@ function Sidebar() {
           </NavLink>
         ))}
       </nav>
+
+      <div>hi</div>
     </aside>
   )
 }

@@ -4,8 +4,6 @@ A full-stack study sharing platform built with React, TypeScript, and Express.
 
 Students can upload, browse, and share notes and study resources in one place.
 
-(Readme created with Chatgpt cuz i'm a lazy bum)
-
 ---
 
 ## Tech Stack
