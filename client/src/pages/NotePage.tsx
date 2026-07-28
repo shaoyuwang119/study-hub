@@ -1,9 +1,8 @@
 ﻿import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import { supabase } from '../lib/supabase'
-
-import type { Note } from '../components/Types'
+import { supabase } from '@/lib/supabase'
+import type { Note } from '@/types'
 
 function NotePage() {
   const { id } = useParams()

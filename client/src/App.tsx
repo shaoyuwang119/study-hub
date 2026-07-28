@@ -1,10 +1,9 @@
-﻿import { Routes, Route } from 'react-router-dom'
-import Home from './pages/Home'
-import NotePage from './pages/NotePage'
-import ExplorePage from './pages/ExplorePage'
-import Login from './pages/Login'
-
-import { ProtectedRoute } from './components'
+﻿import { Route, Routes } from 'react-router-dom'
+import { ProtectedRoute } from '@/components'
+import ExplorePage from '@/pages/ExplorePage'
+import Home from '@/pages/Home'
+import Login from '@/pages/Login'
+import NotePage from '@/pages/NotePage'
 
 function App() {
   return (

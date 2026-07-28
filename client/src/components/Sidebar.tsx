@@ -1,6 +1,6 @@
 ﻿import { NavLink, useNavigate } from 'react-router-dom'
 
-import { supabase } from '../lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 type SidebarItem = {
   label: string

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { useEffect, useState } from 'react'
 
-import type { Note } from '../components/Types'
-import { Sidebar, NoteCard } from '../components'
+import { NoteCard, Sidebar } from '@/components'
+import { supabase } from '@/lib/supabase'
+import type { Note } from '@/types'
 
 function ExplorePage() {
   const [query, setQuery] = useState('')

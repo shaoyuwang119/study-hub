@@ -1,4 +1,4 @@
-﻿import type { Note } from './Types'
+﻿import type { Note } from '@/types'
 
 type NoteCardProps = {
   note: Note

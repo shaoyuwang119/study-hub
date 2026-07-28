@@ -1,8 +1,9 @@
-﻿import express from 'express'
-import cors from 'cors'
-import { supabase } from './config/supabase'
-import { requireAuth } from './middleware/auth'
-import type { AuthedRequest } from './middleware/auth'
+﻿import cors from 'cors'
+import express from 'express'
+
+import { supabase } from '@/config/supabase'
+import type { AuthedRequest } from '@/middleware/auth'
+import { requireAuth } from '@/middleware/auth'
 
 const app = express()
 const PORT = 3000

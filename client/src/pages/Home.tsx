@@ -3,10 +3,9 @@ import { Link } from 'react-router-dom'
 
 import type { User } from '@supabase/supabase-js'
 
-import { supabase } from '../lib/supabase'
-
-import { Rightbar, Sidebar, NoteCard, UploadModal } from '../components'
-import type { Note } from '../components/Types'
+import { NoteCard, Rightbar, Sidebar, UploadModal } from '@/components'
+import { supabase } from '@/lib/supabase'
+import type { Note } from '@/types'
 
 function App() {
   const [notes, setNotes] = useState<Note[]>([])
@@ -15,26 +14,22 @@ function App() {
   const [showUpload, setShowUpload] = useState(false)
 
   useEffect(() => {
+    const fetchNotes = async () => {
+      const { data, error } = await supabase.from('notes').select('*')
+      if (error) {
+        console.log(error.message)
+        return
+      }
+      setNotes(data)
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      console.log(user)
+    }
+
     fetchNotes()
   }, [])
-
-  // console.log(notes)
-
-  const fetchNotes = async () => {
-    // const res = await fetch('http://localhost:3000/api/notes')
-    // const data = await res.json()
-    const { data, error } = await supabase.from('notes').select('*')
-    if (error) {
-      console.log(error.message)
-      return
-    }
-    setNotes(data)
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    console.log(user)
-  }
 
   // not sure whether this function will be useful yet -- but keeping it just in case.
   const uploadFileMetadata = async (

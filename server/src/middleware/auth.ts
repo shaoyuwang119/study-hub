@@ -1,6 +1,7 @@
-﻿import type { Request, Response, NextFunction } from 'express'
-import type { User } from '@supabase/supabase-js'
-import { supabase } from '../config/supabase'
+﻿import type { User } from '@supabase/supabase-js'
+import type { NextFunction,Request, Response } from 'express'
+
+import { supabase } from '@/config/supabase'
 
 export interface AuthedRequest extends Request {
   user?: User

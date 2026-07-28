@@ -1,5 +1,5 @@
-﻿import { NoteCard } from './'
-import type { Note } from './Types'
+﻿import { NoteCard } from '@/components'
+import type { Note } from '@/types'
 
 type RightbarProps = {
   notes: Note[]

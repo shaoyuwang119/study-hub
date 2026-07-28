@@ -1,10 +1,10 @@
-﻿import { useState, useEffect } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
+
 import type { Session } from '@supabase/supabase-js'
 
-import { supabase } from '../lib/supabase'
-
-import { Header } from '../components'
+import { Header } from '@/components'
+import { supabase } from '@/lib/supabase'
 
 function Login() {
   const [email, setEmail] = useState('')

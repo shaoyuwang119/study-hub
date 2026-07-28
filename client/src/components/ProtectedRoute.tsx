@@ -1,7 +1,9 @@
-﻿import { Outlet, Navigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+﻿import { useEffect, useState } from 'react'
+import { Navigate, Outlet } from 'react-router-dom'
+
 import type { Session } from '@supabase/supabase-js'
+
+import { supabase } from '@/lib/supabase'
 
 // ProtectedRoute ensures that only authenticated users
 // are allowed to view protected pages(dashboard, explore, note pages, etc.)
