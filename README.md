@@ -37,10 +37,10 @@ To-do:
 
 - [x] Upload notes
 - [x] Backend and database interaction
-- [ ] Individual note pages
-- [ ] Upload and host files
+- [x] Individual note pages
+- [x] Upload and host files
 - [ ] Search function
-- [ ] User authentication
+- [x] User authentication
 - [ ] Polished web frontend (Don't forget CSS variables)
 - [ ] Mobile frontend
 - [ ] Moderation
