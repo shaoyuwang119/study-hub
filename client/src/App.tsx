@@ -4,6 +4,8 @@ import ExplorePage from '@/pages/ExplorePage'
 import Home from '@/pages/Home'
 import Login from '@/pages/Login'
 import NotePage from '@/pages/NotePage'
+import Profile from '@/pages/Profile'
+import NotFound from '@/pages/NotFound'
 
 function App() {
   return (
@@ -15,7 +17,9 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<Home />} />
         <Route path="/explore" element={<ExplorePage />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/notes/:id" element={<NotePage />} />
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   )

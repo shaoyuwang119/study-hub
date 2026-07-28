@@ -39,7 +39,9 @@ To-do:
 - [x] Backend and database interaction
 - [x] Individual note pages
 - [x] Upload and host files
-- [ ] Search function
+- [x] Search function
+- [ ] Organize notes in explore by topic
+- [ ] Account page
 - [x] User authentication
 - [ ] Polished web frontend (Don't forget CSS variables)
 - [ ] Mobile frontend
