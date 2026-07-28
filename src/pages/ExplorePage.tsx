@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import type { Note } from '../components/Types'
+import { supabase } from '../lib/supabase'
 
+import type { Note } from '../components/Types'
 import { Sidebar, NoteCard } from '../components'
 
 function ExplorePage() {
@@ -17,8 +18,14 @@ function ExplorePage() {
   useEffect(() => {
     const loadAll = async () => {
       setLoading(true)
-      const res = await fetch('http://localhost:3000/api/notes')
-      const data = await res.json()
+
+      // Fetches notes from supabase
+      const { data, error } = await supabase.from('notes').select('*')
+      if (error) {
+        setError(error.message)
+        return
+      }
+
       setAllNotes(data)
       setResults(data)
       setLoading(false)
@@ -46,16 +53,18 @@ function ExplorePage() {
         return
       }
 
-      const res = await fetch(
-        `http://localhost:3000/api/notes/search?${queryString}`
-      )
-      const data = await res.json()
+      const { data, error } = await supabase
+        .from('notes')
+        .select('*')
+        .ilike('title', `%${query}%`)
+        .ilike('author', `%${author}%`)
 
-      if (!res.ok) {
-        throw new Error(`Search failed (${res.status}): ${data.message}`)
+      if (error) {
+        setError(error.message)
+        return
       }
 
-      setResults(data)
+      setResults(data || [])
       console.log(data)
       setLoading(false)
     } catch (err) {

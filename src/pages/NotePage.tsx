@@ -1,5 +1,8 @@
 ﻿import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+
+import { supabase } from '../lib/supabase'
+
 import type { Note } from '../components/Types'
 
 function NotePage() {
@@ -36,23 +39,25 @@ function NotePage() {
 
   useEffect(() => {
     async function fetchNote() {
-      try {
-        setLoading(true)
-        const res = await fetch(`http://localhost:3000/api/notes/${id}`)
+      setLoading(true)
 
-        if (!res.ok) {
-          throw new Error('Failed to fetch note')
-        }
+      const { data, error } = await supabase
+        .from('notes')
+        .select('*')
+        .eq('id', id)
+        .select()
+        .single()
 
-        const data = await res.json()
-
-        setNote(data)
-      } catch (err: any) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
+      if (error) {
+        setError(error.message)
+        console.log('error!')
+        return
       }
+
+      setNote(data)
+      setLoading(false)
     }
+
     fetchNote()
   }, [id])
 

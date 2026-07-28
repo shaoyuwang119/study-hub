@@ -1,4 +1,7 @@
-﻿import { useState } from 'react'
+﻿import { useState, useEffect } from 'react'
+import { Navigate } from 'react-router-dom'
+import type { Session } from '@supabase/supabase-js'
+
 import { supabase } from '../lib/supabase'
 
 import { Header } from '../components'
@@ -8,9 +11,24 @@ function Login() {
   const [password, setPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
 
-  const [loading, setLoading] = useState(false)
+  const [session, setSession] = useState<Session | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    async function checkSession() {
+      const { data } = await supabase.auth.getSession()
+      setSession(data.session)
+      setLoading(false)
+    }
+
+    checkSession()
+  }, [])
+
+  if (!loading && session) {
+    return <Navigate to="/" replace />
+  }
 
   async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault()
@@ -32,6 +50,7 @@ function Login() {
     }
 
     setLoading(false)
+    setSession(data.session)
   }
 
   return (

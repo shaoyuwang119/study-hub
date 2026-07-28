@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Session } from '@supabase/supabase-js'
 
+// ProtectedRoute ensures that only authenticated users
+// are allowed to view protected pages(dashboard, explore, note pages, etc.)
 export default function ProtectedRoute() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)

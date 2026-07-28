@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import type { User } from '@supabase/supabase-js'
+
 import { supabase } from '../lib/supabase'
 
 import { Rightbar, Sidebar, NoteCard, UploadModal } from '../components'
@@ -8,6 +10,7 @@ import type { Note } from '../components/Types'
 
 function App() {
   const [notes, setNotes] = useState<Note[]>([])
+  // const [error, setError] = useState<string | null>()
 
   const [showUpload, setShowUpload] = useState(false)
 
@@ -15,16 +18,54 @@ function App() {
     fetchNotes()
   }, [])
 
-  console.log(notes)
+  // console.log(notes)
 
   const fetchNotes = async () => {
-    const res = await fetch('http://localhost:3000/api/notes')
-    const data = await res.json()
+    // const res = await fetch('http://localhost:3000/api/notes')
+    // const data = await res.json()
+    const { data, error } = await supabase.from('notes').select('*')
+    if (error) {
+      console.log(error.message)
+      return
+    }
     setNotes(data)
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    console.log(user)
   }
 
-  const uploadFile = async (file: File) => {
-    const filePath = `${Date.now()}-${file.name}`
+  // not sure whether this function will be useful yet -- but keeping it just in case.
+  const uploadFileMetadata = async (
+    user: User,
+    noteData: any,
+    fileName: string,
+    fileUrl: string,
+    fileType: string
+  ) => {
+    const { data: fileData, error: fileError } = await supabase
+      .from('files')
+      .insert({
+        user_id: user.id,
+        note_id: noteData.id,
+        file_name: fileName,
+        file_url: fileUrl,
+        file_type: fileType,
+      })
+      .select()
+      .single()
+
+    if (fileError) {
+      console.log(fileError.message)
+      return
+    }
+
+    return [fileData, fileError]
+  }
+
+  const uploadFile = async (file: File, user: User) => {
+    const filePath = `${user.id}/${Date.now()}-${file.name}`
 
     const { error } = await supabase.storage
       .from('note-files')
@@ -45,46 +86,42 @@ function App() {
     author: string
   }) => {
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session) {
+        console.log('Not authenticated!')
+        return
+      }
+
       // Upload file to Supabase Storage
-      const [fileName, fileUrl] = await uploadFile(newNote.file)
+      const fileUrl = await uploadFile(newNote.file, session.user)
       console.log(fileUrl)
 
       // Create note in backend
-      const res = await fetch('http://localhost:3000/api/notes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: newNote.title,
-          subject: newNote.subject,
-          description: newNote.description,
-          author: newNote.author,
-          content_url: fileUrl,
-        }),
-      })
-
-      if (!res.ok) throw new Error('Failed to creat note')
-
-      const savedNote: Note = await res.json()
-
-      // Insert file metadata into "files" table
-      const { error } = await supabase
-        .from('files')
-        .insert({
-          user_id: 1, // TODO: USER AUTH ID
-          note_id: savedNote.id,
-          file_name: fileName,
-          file_url: fileUrl,
-          file_type: newNote.file.type,
-        })
+      const { data: noteData, error: noteError } = await supabase
+        .from('notes')
+        .insert([
+          {
+            title: newNote.title,
+            subject: newNote.subject,
+            description: newNote.description,
+            content_url: fileUrl,
+            author: newNote.author,
+            user_id: session.user.id,
+          },
+        ])
         .select()
         .single()
 
-      if (error) throw error
+      if (noteError) {
+        console.log(noteError.message)
+        return
+      }
 
-      // Update UI
-      setNotes((prev) => [...prev, savedNote])
+      console.log('Note and file created:', noteData)
+
+      setNotes((prev) => [...prev, noteData])
       setShowUpload(false)
     } catch (err) {
       console.error(err)

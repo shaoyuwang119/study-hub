@@ -16,15 +16,6 @@ app.get('/', (req, res) => {
   res.send('Study Hub backend is running')
 })
 
-app.get('/api/notes', async (req, res) => {
-  const { data, error } = await supabase.from('notes').select('*')
-  if (error) {
-    return res.status(500).json({ error: error.message })
-  }
-
-  res.json(data)
-})
-
 app.get('/api/notes/search', async (req, res) => {
   const { q, author } = req.query
 
@@ -50,78 +41,78 @@ app.get('/api/notes/search', async (req, res) => {
   res.json(data)
 })
 
-app.get('/api/notes/:id', async (req, res) => {
-  const { id } = req.params
+// app.get('/api/notes/:id', async (req, res) => {
+//   const { id } = req.params
 
-  const { data, error } = await supabase
-    .from('notes')
-    .select('*')
-    .eq('id', id)
-    .single()
+//   const { data, error } = await supabase
+//     .from('notes')
+//     .select('*')
+//     .eq('id', id)
+//     .single()
 
-  if (error) {
-    return res.status(404).json({
-      message: 'Page not found!',
-    })
-  }
+//   if (error) {
+//     return res.status(404).json({
+//       message: 'Page not found!',
+//     })
+//   }
 
-  res.json(data)
-})
+//   res.json(data)
+// })
 
-app.post('/api/notes', requireAuth, async (req: AuthedRequest, res) => {
-  const { title, subject, description, content_url } = req.body
-  const saves = 0
+// app.post('/api/notes', requireAuth, async (req: AuthedRequest, res) => {
+//   const { title, subject, description, content_url } = req.body
+//   const saves = 0
 
-  // Use the verified user's info instead of trusting anything
-  // the client could put in the request body.
-  const author = req.user!.id
+//   // Use the verified user's info instead of trusting anything
+//   // the client could put in the request body.
+//   const author = req.user!.id
 
-  const newNote = {
-    title,
-    subject,
-    description,
-    content_url,
-    author,
-    saves,
-  }
+//   const newNote = {
+//     title,
+//     subject,
+//     description,
+//     content_url,
+//     author,
+//     saves,
+//   }
 
-  const { data, error } = await supabase.from('notes').insert(newNote).select()
+//   const { data, error } = await supabase.from('notes').insert(newNote).select()
 
-  if (error) {
-    console.log(error.message)
-    return res.status(500).json({ error: error.message })
-  }
+//   if (error) {
+//     console.log(error.message)
+//     return res.status(500).json({ error: error.message })
+//   }
 
-  res.json(data[0])
-})
+//   res.json(data[0])
+// })
 
-app.delete('/api/notes/:id', requireAuth, async (req: AuthedRequest, res) => {
-  const { id } = req.params
+// app.delete('/api/notes/:id', requireAuth, async (req: AuthedRequest, res) => {
+//   const { id } = req.params
 
-  const { data, error } = await supabase
-    .from('notes')
-    .delete()
-    .eq('id', id)
-    .select()
+//   const { data, error } = await supabase
+//     .from('notes')
+//     .delete()
+//     .eq('id', id)
+//     .select()
 
-  if (error) {
-    return res.status(403).json({
-      message: 'Delete failed',
-      error: error.message,
-    })
-  }
+//   if (error) {
+//     return res.status(403).json({
+//       message: 'Delete failed',
+//       error: error.message,
+//     })
+//   }
 
-  if (!data || data.length === 0) {
-    return res.status(404).json({
-      message: 'No note deleted (not found or no permission)',
-    })
-  }
+//   if (!data || data.length === 0) {
+//     return res.status(404).json({
+//       message: 'No note deleted (not found or no permission)',
+//     })
+//   }
 
-  res.json({
-    message: 'Note deleted successfully',
-  })
-})
+//   res.json({
+//     message: 'Note deleted successfully',
+//   })
+// })
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`)
-})
+// app.listen(PORT, () => {
+//   console.log(`Server running at http://localhost:${PORT}`)
+// })
