@@ -4,6 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
 
+import { Sidebar } from '@/components'
+
 function NotePage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -73,17 +75,21 @@ function NotePage() {
   }
 
   return (
-    <div className="mx-auto p-6">
-      <h1 className="mb-4 text-3xl font-bold">{note.title}</h1>
-      <h2>Author: {note.author}</h2>
-      <p>Description: {note.description}</p>
-      <img src={note.content_url} className="my-2 border"></img>
-      <button
-        onClick={handleDelete}
-        className="transition-shadows w-40 cursor-pointer rounded-md bg-red-500 px-4 py-2 text-white duration-200 hover:bg-red-600 hover:shadow-sm"
-      >
-        Delete Note
-      </button>
+    <div className="flex h-screen font-sans">
+      <Sidebar />
+      {loading && <div>Loading...</div>}
+      <div className="ml-5">
+        <h1 className="mb-4 text-3xl font-bold">{note.title}</h1>
+        <h2>Author: {note.author}</h2>
+        <p>Description: {note.description}</p>
+        <img src={note.content_url} className="my-2 border"></img>
+        <button
+          onClick={handleDelete}
+          className="transition-shadows w-40 cursor-pointer rounded-md bg-red-500 px-4 py-2 text-white duration-200 hover:bg-red-600 hover:shadow-sm"
+        >
+          Delete Note
+        </button>
+      </div>
     </div>
   )
 }

@@ -3,21 +3,37 @@ import { Link } from 'react-router-dom'
 
 import type { User } from '@supabase/supabase-js'
 
-import { NoteCard, Rightbar, Sidebar, UploadModal } from '@/components'
+import {
+  NoteCard,
+  Rightbar,
+  Sidebar,
+  UploadModal,
+  ErrorDisplay,
+} from '@/components'
 import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
 
 function App() {
   const [notes, setNotes] = useState<Note[]>([])
-  // const [error, setError] = useState<string | null>()
+  const [error, setError] = useState<string | null>()
+  const [searchQuery, setSearchQuery] = useState('')
 
   const [showUpload, setShowUpload] = useState(false)
+
+  const filteredNotes = notes.filter((note) => {
+    const query = searchQuery.toLowerCase()
+    return (
+      note.title.toLowerCase().includes(query) ||
+      note.subject?.toLowerCase().includes(query) ||
+      note.description?.toLowerCase().includes(query)
+    )
+  })
 
   useEffect(() => {
     const fetchNotes = async () => {
       const { data, error } = await supabase.from('notes').select('*')
       if (error) {
-        console.log(error.message)
+        setError(error.message)
         return
       }
       setNotes(data)
@@ -52,7 +68,7 @@ function App() {
       .single()
 
     if (fileError) {
-      console.log(fileError.message)
+      setError(fileError.message)
       return
     }
 
@@ -110,7 +126,7 @@ function App() {
         .single()
 
       if (noteError) {
-        console.log(noteError.message)
+        setError(noteError.message)
         return
       }
 
@@ -145,6 +161,8 @@ function App() {
 
         <div className="mb-2 space-y-2">
           <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search notes, classes, subjects..."
             className="w-full rounded-lg border border-gray-200 bg-zinc-50 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
           />
@@ -155,21 +173,20 @@ function App() {
           </div>
         </div>
 
-        <div className="flex flex-col items-start gap-y-2">
+        <div className="flex flex-col items-start gap-y-3">
           <div className="mx-1 text-xl">Continue studying</div>
-          {notes.map((note) => (
-            <Link
-              key={note.id}
-              to={`/notes/${note.id}`}
-              className="block w-full"
-            >
-              <NoteCard note={note} preview={note.content_url} />
-            </Link>
-          ))}
+          {error && <ErrorDisplay message={error} />}
+          <div className="flex flex-wrap gap-4">
+            {filteredNotes.map((note) => (
+              <Link key={note.id} to={`/notes/${note.id}`}>
+                <NoteCard note={note} preview={note.content_url} />
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
 
-      <Rightbar notes={notes} />
+      {/* <Rightbar notes={notes} /> */}
     </div>
   )
 }

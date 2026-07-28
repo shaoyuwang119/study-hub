@@ -43,7 +43,7 @@ To-do:
 - [ ] Organize notes in explore by topic
 - [ ] Account page
 - [x] User authentication
-- [ ] Polished web frontend (Don't forget CSS variables)
+- [ ] Polished web frontend (Don't forget CSS variables) + light/dark mode
 - [ ] Mobile frontend
 - [ ] Moderation
 

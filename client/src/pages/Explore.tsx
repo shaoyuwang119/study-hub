@@ -4,7 +4,7 @@ import { NoteCard, Sidebar } from '@/components'
 import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
 
-function ExplorePage() {
+function Explore() {
   const [query, setQuery] = useState('')
   const [author, setAuthor] = useState('')
   const [results, setResults] = useState<Note[]>([])
@@ -182,7 +182,7 @@ function ExplorePage() {
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-y-2">
+            <div className="flex flex-wrap gap-4">
               {displayedNotes.map((note) => (
                 <NoteCard
                   key={note.id}
@@ -198,4 +198,4 @@ function ExplorePage() {
   )
 }
 
-export default ExplorePage
+export default Explore
