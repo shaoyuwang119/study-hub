@@ -10,6 +10,7 @@ import {
   UploadModal,
   ErrorDisplay,
 } from '@/components'
+
 import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
 
@@ -93,7 +94,7 @@ function App() {
     title: string
     subject: string
     description: string
-    file: File
+    files: File[]
     author: string
   }) => {
     try {
@@ -105,33 +106,27 @@ function App() {
         return
       }
 
-      // Upload file to Supabase Storage
-      const fileUrl = await uploadFile(newNote.file, session.user)
-      console.log(fileUrl)
+      // Upload files to server to convert them to PDF
+      const formData = new FormData()
+      formData.append('title', newNote.title)
+      formData.append('subject', newNote.subject)
+      formData.append('description', newNote.description)
+      formData.append('author', newNote.author)
+      newNote.files.forEach((file) => formData.append('files', file))
 
-      // Create note in backend
-      const { data: noteData, error: noteError } = await supabase
-        .from('notes')
-        .insert([
-          {
-            title: newNote.title,
-            subject: newNote.subject,
-            description: newNote.description,
-            content_url: fileUrl,
-            author: newNote.author,
-            user_id: session.user.id,
-          },
-        ])
-        .select()
-        .single()
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/notes`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: formData,
+      })
 
-      if (noteError) {
-        setError(noteError.message)
+      if (!res.ok) {
+        const body = await res.json().catch(() => null)
+        setError(body?.error ?? 'Failed to upload note.')
         return
       }
 
-      console.log('Note and file created:', noteData)
-
+      const noteData = await res.json()
       setNotes((prev) => [...prev, noteData])
       setShowUpload(false)
     } catch (err) {

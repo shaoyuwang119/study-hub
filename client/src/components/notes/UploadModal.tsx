@@ -9,7 +9,7 @@ type UploadModalProps = {
     title: string
     subject: string
     description: string
-    file: File
+    files: File[]
     author: string
   }) => void
   onClose: () => void
@@ -21,7 +21,7 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
   const [title, setTitle] = useState('')
   const [subject, setSubject] = useState('')
   const [description, setDescription] = useState('')
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[] | null>(null)
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50">
@@ -40,17 +40,22 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
           onSubmit={(e) => {
             e.preventDefault()
 
-            if (!file) {
+            if (!files) {
               alert('Please select a file.')
               return
             }
+
+            // if (!title || !subject || !description) {
+            //   alert('Please fill in all fields.')
+            //   return
+            // }
 
             onSubmit({
               title,
               subject,
               description,
-              file,
-              author: 'John D',
+              files: files,
+              author: 'Anonymous', // todo: replace with actual author in public profiles table
             })
             onClose()
           }}
@@ -81,10 +86,12 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
           <input
             id="fileInput"
             type="file"
-            accept=".pdf,.png,.jpg,.jpeg.,.docx"
+            accept=".pdf,.png,.jpg,.jpeg.,.heic"
+            multiple
             onChange={(e) => {
-              const selected = e.target.files?.[0] ?? null
-              if (selected !== null) setFile(selected)
+              const selected = Array.from(e.target.files ?? [])
+              if (selected.length > 0) setFiles([...(files || []), ...selected])
+              e.target.value = ''
             }}
             className="hidden"
           />
@@ -92,12 +99,18 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
             htmlFor="fileInput"
             className="flex h-25 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 px-4 py-2 text-gray-500 hover:bg-gray-100"
           >
-            Choose File
+            Choose File(s)
           </label>
 
-          {file && (
-            <p className="text-xs text-zinc-500">Selected: {file.name}</p>
-          )}
+          {files?.map((file, index) => (
+            <div key={index} className="flex items-center justify-between">
+              <p className="text-sm text-gray-700">{file.name}</p>
+            </div>
+          ))}
+
+          {/* {files && (
+            <p className="text-xs text-zinc-500">Selected: {files.name}</p>
+          )} */}
 
           <button
             type="submit"
