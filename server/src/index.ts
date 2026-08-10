@@ -47,7 +47,7 @@ app.get('/api/notes/search', async (req, res) => {
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024, files: 10 },
+  limits: { fileSize: 20 * 1024 * 1024, files: 20 },
 })
 
 const ALLOWED_TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg'])
@@ -55,7 +55,7 @@ const ALLOWED_TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg'])
 app.post(
   '/api/notes',
   requireAuth,
-  upload.array('files', 10),
+  upload.array('files', 20),
   async (req: AuthedRequest, res) => {
     const files = req.files as Express.Multer.File[]
     const { title, subject, description, author } = req.body
@@ -116,7 +116,7 @@ app.post(
       { global: { headers: { Authorization: req.headers.authorization! } } }
     )
 
-    const filePath = `${req.user!.id}/${Date.now()}-${title}-bundle.pdf`
+    const filePath = `${req.user!.id}/${Date.now()}-${title}.pdf`
 
     const { error: uploadError } = await supabaseClient.storage
       .from('note-files')

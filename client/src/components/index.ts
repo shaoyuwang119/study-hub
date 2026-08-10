@@ -1,6 +1,7 @@
 ﻿export { default as Header } from './common/Header'
 export { default as ErrorDisplay } from './common/ErrorDisplay'
 export { default as NoteCard } from './notes/NoteCard'
+export { default as NoteCardMini } from './notes/NoteCardMini'
 export { default as UploadModal } from './notes/UploadModal'
 export { default as ProtectedRoute } from './auth/ProtectedRoute'
 export { default as Rightbar } from './Rightbar'

@@ -1,6 +1,11 @@
 ﻿import { useState } from 'react'
 
-import { faXmark } from '@fortawesome/free-solid-svg-icons'
+import {
+  faXmark,
+  faFileLines,
+  faFileImage,
+  faCloudArrowUp,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
 type UploadModalProps = {
@@ -15,17 +20,37 @@ type UploadModalProps = {
   onClose: () => void
 }
 
+const SUBJECTS = [
+  // TODO: fetch subjects from database instead of hardcoding them
+  'Math',
+  'Science',
+  'English',
+  'History',
+  'Geography',
+  'Biology',
+  'Chemistry',
+  'Physics',
+  'Computer Science',
+  'Art',
+  'Music',
+].sort()
+
 function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
   if (!open) return null
 
   const [title, setTitle] = useState('')
   const [subject, setSubject] = useState('')
   const [description, setDescription] = useState('')
-  const [files, setFiles] = useState<File[] | null>(null)
+  const [files, setFiles] = useState<File[]>([])
+  const [uploadType, setUploadType] = useState<'pdf' | 'images'>('pdf')
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev?.filter((_, i) => i !== index) ?? null)
+  }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50">
-      <div className="w-125 rounded-2xl bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/50">
+      <div className="w-200 rounded-2xl bg-zinc-100 p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-zinc-800">Upload Notes</h2>
           <button
@@ -40,84 +65,147 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
           onSubmit={(e) => {
             e.preventDefault()
 
-            if (!files) {
+            if (!title || !subject) {
+              alert('Please fill in all required fields.')
+              return
+            }
+
+            if (files.length === 0) {
               alert('Please select a file.')
               return
             }
 
-            // if (!title || !subject || !description) {
-            //   alert('Please fill in all fields.')
-            //   return
-            // }
-
-            onSubmit({
-              title,
-              subject,
-              description,
-              files: files,
-              author: 'Anonymous', // todo: replace with actual author in public profiles table
-            })
+            // TODO: get author from user context instead of hardcoding it
+            onSubmit({ title, subject, description, files, author: 'John D' })
             onClose()
           }}
-          className="flex flex-col gap-4"
+          className="flex gap-6"
         >
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Title"
-            className="rounded-lg border border-gray-200 p-2 focus:border-gray-300 focus:outline-none"
-          />
-          <input
-            type="text"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            placeholder="Subject"
-            className="rounded-lg border border-gray-200 p-2 focus:border-gray-300 focus:outline-none"
-          />
-          <input
-            type="text"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Description"
-            className="rounded-lg border border-gray-200 p-2 focus:border-gray-300 focus:outline-none"
-          />
-
-          <input
-            id="fileInput"
-            type="file"
-            accept=".pdf,.png,.jpg,.jpeg.,.heic"
-            multiple
-            onChange={(e) => {
-              const selected = Array.from(e.target.files ?? [])
-              if (selected.length > 0) setFiles([...(files || []), ...selected])
-              e.target.value = ''
-            }}
-            className="hidden"
-          />
-          <label
-            htmlFor="fileInput"
-            className="flex h-25 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 px-4 py-2 text-gray-500 hover:bg-gray-100"
-          >
-            Choose File(s)
-          </label>
-
-          {files?.map((file, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <p className="text-sm text-gray-700">{file.name}</p>
+          {/* Left column: files */}
+          <div className="flex w-1/2 flex-col gap-3">
+            <div className="flex items-center">
+              <div className="mr-2 text-zinc-700">Upload Type:</div>
+              <select
+                value={uploadType}
+                onChange={(e) => {
+                  setUploadType(e.target.value as 'pdf' | 'images')
+                  setFiles([])
+                }}
+                className="flex-1 rounded-lg border border-gray-300 p-2 text-gray-700 focus:border-gray-300 focus:outline-none"
+              >
+                <option value="pdf">PDF</option>
+                <option value="images">Images</option>
+              </select>
             </div>
-          ))}
+            <input
+              id="fileInput"
+              type="file"
+              accept={
+                uploadType === 'pdf'
+                  ? '.pdf'
+                  : '.png,.jpg,.jpeg,.webp,.svg,.heic'
+              }
+              multiple={uploadType === 'images'}
+              onChange={(e) => {
+                const selected = Array.from(e.target.files ?? [])
+                if (selected.length == 0) return
 
-          {/* {files && (
-            <p className="text-xs text-zinc-500">Selected: {files.name}</p>
-          )} */}
+                if (uploadType === 'pdf') {
+                  setFiles([selected[0]]) // only allow one PDF
+                } else {
+                  setFiles((prev) => [...prev, ...selected])
+                }
+                e.target.value = '' // allow re-picking the same filename
+              }}
+              className="hidden"
+            />
+            <label
+              htmlFor="fileInput"
+              className="flex h-28 cursor-pointer flex-col items-center rounded-lg border-2 border-dashed border-gray-300 px-4 py-2 text-gray-500 hover:bg-gray-100"
+            >
+              <div className="mt-5">
+                <FontAwesomeIcon icon={faCloudArrowUp} className="mr-2" />
+                Upload {uploadType === 'pdf' ? 'PDF' : 'Images'}
+              </div>
+              <div className="mt-auto text-center text-xs text-zinc-400">
+                Supported formats:{' '}
+                {uploadType === 'pdf'
+                  ? 'PDF'
+                  : 'PNG, JPG, JPEG, WEBP, SVG, HEIC'}
+                . Max {uploadType === 'pdf' ? '1 file' : '20 files'}. Max size
+                20MB per file.
+              </div>
+            </label>
+            <div className="flex max-h-40 flex-col overflow-y-auto">
+              {files.map((file, index) => (
+                <div
+                  key={`${file.name}-${index}`}
+                  className="flex items-center border-b border-gray-300 py-2"
+                >
+                  <FontAwesomeIcon
+                    key={`${file.name}-${index}`}
+                    icon={
+                      file.type.startsWith('image/') ? faFileImage : faFileLines
+                    }
+                    className="mr-2 text-zinc-400"
+                  />
+                  <p className="truncate text-sm text-gray-700">{file.name}</p>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(index)}
+                    className="ml-auto cursor-pointer px-2 text-zinc-400 hover:text-red-500"
+                  >
+                    <FontAwesomeIcon icon={faXmark} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <p className="h-0 pb-1 text-xs text-gray-500">
+              {files.length === 0
+                ? 'No files selected yet!'
+                : `${files.length} file${files.length === 1 ? '' : 's'} selected`}
+            </p>
+          </div>
 
-          <button
-            type="submit"
-            className="cursor-pointer rounded-lg bg-blue-500 p-3 text-white transition hover:bg-blue-600"
-          >
-            Submit
-          </button>
+          {/* Right column: metadata */}
+          <div className="flex h-90 w-1/2 flex-col gap-3">
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Title (required)"
+              className="rounded-lg border border-gray-300 px-3 py-2 font-semibold text-zinc-800 placeholder:text-zinc-400 focus:border-gray-300 focus:outline-none"
+            />
+
+            <select
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              className={`rounded-lg border border-gray-300 px-2 py-2 focus:border-gray-300 focus:outline-none ${subject === '' ? 'text-zinc-400' : 'text-zinc-800'}`}
+            >
+              <option value="" disabled>
+                Subject (required)
+              </option>
+              {SUBJECTS.map((s) => (
+                <option key={s} value={s} className="text-zinc-700">
+                  {s}
+                </option>
+              ))}
+            </select>
+
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description"
+              className="flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-zinc-800 placeholder:text-zinc-400 focus:border-gray-300 focus:outline-none"
+            />
+
+            <button
+              type="submit"
+              className="cursor-pointer rounded-lg bg-blue-500 p-3 text-white transition hover:bg-blue-600"
+            >
+              Submit
+            </button>
+          </div>
         </form>
       </div>
     </div>

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { supabase } from '@/lib/supabase'
@@ -6,6 +6,13 @@ import type { Note } from '@/types'
 
 import { Sidebar, ErrorDisplay } from '@/components'
 import type { User } from '@supabase/supabase-js'
+
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faExpand,
+  faCompress,
+  faEllipsisVertical,
+} from '@fortawesome/free-solid-svg-icons'
 
 type FetchState =
   | { status: 'loading' }
@@ -20,6 +27,14 @@ function NotePage() {
   const [state, setState] = useState<FetchState>({ status: 'loading' })
   const [user, setUser] = useState<User>()
 
+  const [activeTab, setActiveTab] = useState<
+    'details' | 'comments' | 'related'
+  >('details')
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  const [showMenu, setShowMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
   async function handleDelete() {
     const confirmDelete = window.confirm(
       'Are you sure you want to delete this note?'
@@ -31,6 +46,19 @@ function NotePage() {
 
     navigate('/')
   }
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   useEffect(() => {
     async function fetchNote() {
@@ -82,38 +110,136 @@ function NotePage() {
           </div>
         )
       case 'ready': {
+        const { note } = state
+        const publishedDate = new Date(note.created_at).toLocaleDateString(
+          undefined,
+          { year: 'numeric', month: 'long', day: 'numeric' }
+        )
+
         return (
-          <>
-            <h1 className="mb-4 text-3xl font-bold">{state.note.title}</h1>
-            <h2>Author: {state.note.author}</h2>
-            <p>Description: {state.note.description}</p>
-
-            {state.note.content_url ? (
-              <img src={state.note.content_url} className="my-2 border"></img>
-            ) : (
-              <p>No content attached.</p>
-            )}
-
-            {state.note.user_id == user!.id && (
+          <div className="flex h-full w-full gap-2">
+            <div
+              className={`overflow-hidden bg-black shadow-md transition-all duration-200 ${
+                isExpanded
+                  ? 'fixed inset-0 z-50 h-screen w-screen'
+                  : 'sticky h-full w-[70%]'
+              }`}
+            >
               <button
-                onClick={handleDelete}
-                className="transition-shadows w-40 cursor-pointer rounded-md bg-red-500 px-4 py-2 text-white duration-200 hover:bg-red-600 hover:shadow-sm"
+                onClick={() => setIsExpanded((prev) => !prev)}
+                aria-label={isExpanded ? 'Exit fullscreen' : 'Expand preview'}
+                className="absolute top-4 right-4 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
               >
-                Delete Note
+                <FontAwesomeIcon icon={isExpanded ? faCompress : faExpand} />
               </button>
+
+              {note.content_url ? (
+                <iframe
+                  src={note.content_url}
+                  title={note.title}
+                  className="h-full w-full"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-gray-400">
+                  No content attached.
+                </div>
+              )}
+            </div>
+
+            {!isExpanded && (
+              <div className="flex flex-1 flex-col gap-3 bg-zinc-50 px-6 py-5">
+                <div className="flex gap-4 border-b border-gray-200">
+                  {(['details', 'comments', 'related'] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`cursor-pointer border-b-2 px-1 pb-1 text-sm font-medium capitalize ${
+                        activeTab === tab
+                          ? 'border-black text-black'
+                          : 'border-transparent text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+
+                  {note.user_id === user?.id && (
+                    <div className="relative mb-1 ml-auto" ref={menuRef}>
+                      <button
+                        onClick={() => setShowMenu((prev) => !prev)}
+                        aria-label="Note options"
+                        className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
+                      >
+                        <FontAwesomeIcon icon={faEllipsisVertical} />
+                      </button>
+
+                      {showMenu && (
+                        <div className="absolute right-0 z-10 mt-1 w-36 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg">
+                          <button
+                            onClick={() => {
+                              setShowMenu(false)
+                              navigate(`/notes/${id}/edit`)
+                            }}
+                            className="block w-full cursor-pointer px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            Edit Note
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowMenu(false)
+                              handleDelete()
+                            }}
+                            className="block w-full cursor-pointer px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                          >
+                            Delete Note
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {activeTab === 'details' && (
+                  <div className="flex flex-col gap-3 pt-1">
+                    <h1 className="text-3xl font-bold">{note.title}</h1>
+
+                    {note.subject && (
+                      <span className="w-fit rounded-full border border-gray-300 px-3 py-1 text-sm text-gray-600">
+                        {note.subject}
+                      </span>
+                    )}
+
+                    <p className="text-sm text-gray-600">
+                      Author: {note.author}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Date published: {publishedDate}
+                    </p>
+
+                    <p className="mt-2 text-gray-800">{note.description}</p>
+                  </div>
+                )}
+
+                {activeTab === 'comments' && (
+                  <p className="pt-6 text-sm text-gray-400">
+                    Comments coming soon.
+                  </p>
+                )}
+
+                {activeTab === 'related' && (
+                  <p className="pt-6 text-sm text-gray-400">
+                    Related notes coming soon.
+                  </p>
+                )}
+              </div>
             )}
-          </>
+          </div>
         )
       }
     }
   }
 
-  return (
-    <div className="flex h-screen font-sans">
-      <Sidebar />
-      <div className="ml-5">{renderContent()} </div>
-    </div>
-  )
+  return <div className="flex-1 bg-zinc-50">{renderContent()}</div>
 }
 
 export default NotePage

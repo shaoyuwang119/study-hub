@@ -4,6 +4,7 @@ import { Navigate, Outlet } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 
 import { supabase } from '@/lib/supabase'
+import { Sidebar } from '@/components'
 
 // ProtectedRoute ensures that only authenticated users
 // are allowed to view protected pages(dashboard, explore, note pages, etc.)
@@ -40,5 +41,10 @@ export default function ProtectedRoute() {
     return <Navigate to="/login" replace />
   }
 
-  return <Outlet />
+  return (
+    <div className="flex h-screen font-sans">
+      <Sidebar />
+      <Outlet />
+    </div>
+  )
 }

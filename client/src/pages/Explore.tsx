@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
-import { NoteCard, Sidebar } from '@/components'
+import { NoteCard } from '@/components'
 import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
 
@@ -86,8 +87,7 @@ function Explore() {
   const displayedNotes = results
 
   return (
-    <div className="flex min-h-screen font-sans">
-      <Sidebar />
+    <div className="flex min-h-screen">
       <div className="flex-1 flex-col bg-zinc-50 p-6">
         {/* Page header */}
         <div className="mb-6">
@@ -184,11 +184,9 @@ function Explore() {
           ) : (
             <div className="flex flex-wrap gap-4">
               {displayedNotes.map((note) => (
-                <NoteCard
-                  key={note.id}
-                  note={note}
-                  preview={note.content_url}
-                />
+                <Link key={note.id} to={`/notes/${note.id}`}>
+                  <NoteCard note={note} preview={note.content_url} />
+                </Link>
               ))}
             </div>
           )}

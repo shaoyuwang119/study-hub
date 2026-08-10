@@ -3,13 +3,7 @@ import { Link } from 'react-router-dom'
 
 import type { User } from '@supabase/supabase-js'
 
-import {
-  NoteCard,
-  Rightbar,
-  Sidebar,
-  UploadModal,
-  ErrorDisplay,
-} from '@/components'
+import { NoteCard, Rightbar, UploadModal, ErrorDisplay } from '@/components'
 
 import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
@@ -76,20 +70,6 @@ function App() {
     return [fileData, fileError]
   }
 
-  const uploadFile = async (file: File, user: User) => {
-    const filePath = `${user.id}/${Date.now()}-${file.name}`
-
-    const { error } = await supabase.storage
-      .from('note-files')
-      .upload(filePath, file)
-
-    if (error) throw error
-
-    const { data } = supabase.storage.from('note-files').getPublicUrl(filePath)
-
-    return [filePath, data.publicUrl]
-  }
-
   const handleSubmit = async (newNote: {
     title: string
     subject: string
@@ -135,9 +115,7 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen font-sans">
-      <Sidebar />
-
+    <div className="flex h-screen">
       <div className="flex-1 flex-col overflow-y-auto bg-zinc-50 p-6">
         <div className="mb-4 flex flex-row justify-between">
           <div className="text-4xl font-medium text-zinc-900">Home</div>
@@ -181,7 +159,7 @@ function App() {
         </div>
       </div>
 
-      {/* <Rightbar notes={notes} /> */}
+      <Rightbar notes={notes} />
     </div>
   )
 }

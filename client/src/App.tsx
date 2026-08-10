@@ -6,6 +6,7 @@ import Login from '@/pages/Login'
 import NotePage from '@/pages/NotePage'
 import Profile from '@/pages/Profile'
 import NotFound from '@/pages/NotFound'
+import Library from '@/pages/Library'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/explore" element={<Explore />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/library" element={<Library />} />
         <Route path="/notes/:id" element={<NotePage />} />
         <Route path="*" element={<NotFound />} />
       </Route>
