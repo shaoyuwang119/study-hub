@@ -142,54 +142,57 @@ function NoteEditPage() {
     const { note } = state
     setSaving(true)
 
-    const originalBytes = await fetch(note.content_url).then((r) =>
-      r.arrayBuffer()
-    )
-    const originalPdf = await PDFDocument.load(originalBytes)
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session) {
+        alert('Not authenticated!')
+        setSaving(false)
+        return
+      }
 
-    const newPdf = await PDFDocument.create()
-    const copiedPages = await newPdf.copyPages(originalPdf, pageOrder)
-    copiedPages.forEach((page) => newPdf.addPage(page))
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/notes/${note.id}/reorder`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ pageOrder, noteTitle: title }),
+        }
+      )
 
-    const newBytes = await newPdf.save()
-    const newBlob = new Blob([newBytes as BlobPart], {
-      type: 'application/pdf',
-    })
-    const filePath = `${note.user_id}/${Date.now()}-${note.title}.pdf`
+      if (!res.ok) {
+        const body = await res.json().catch(() => null)
+        alert(body?.error ?? 'Failed to update PDF pages.')
+        setSaving(false)
+      }
 
-    const { error: uploadError } = await supabase.storage
-      .from('note-files')
-      .upload(filePath, newBlob)
+      const { content_url } = await res.json()
 
-    if (uploadError) {
+      const { error: updateError } = await supabase
+        .from('notes')
+        .update({
+          title,
+          subject,
+          description,
+          content_url,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', note.id)
+
+      if (updateError) {
+        alert(updateError.message)
+        setSaving(false)
+        return
+      }
+
+      navigate(`/notes/${note.id}`)
+    } finally {
       setSaving(false)
-      alert(uploadError.message)
-      return
     }
-
-    const { data: urlData } = supabase.storage
-      .from('note-files')
-      .getPublicUrl(filePath)
-
-    const { error: updateError } = await supabase
-      .from('notes')
-      .update({
-        title,
-        subject,
-        description,
-        content_url: urlData.publicUrl,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', note.id)
-
-    setSaving(false)
-
-    if (updateError) {
-      alert(updateError.message)
-      return
-    }
-
-    navigate(`/notes/${note.id}`)
   }
 
   if (state.status === 'loading') return <div>Loading...</div>

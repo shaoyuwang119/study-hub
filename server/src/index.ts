@@ -7,6 +7,9 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { supabase } from '@/config/supabase'
 import type { AuthedRequest } from '@/middleware/auth'
 import { requireAuth } from '@/middleware/auth'
+import { uploadPdfToSupabase } from './utils/uploadFile'
+import { getRequestScopedClient } from './utils/supabaseClient'
+import { get } from 'node:http'
 
 const app = express()
 const PORT = 3000
@@ -110,27 +113,19 @@ app.post(
     }
 
     // Act as the requesting user so Supabase's RLS applies normally
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_ANON_KEY!,
-      { global: { headers: { Authorization: req.headers.authorization! } } }
-    )
+    const supabaseClient = getRequestScopedClient(req)
 
-    const filePath = `${req.user!.id}/${Date.now()}-${title}.pdf`
-
-    const { error: uploadError } = await supabaseClient.storage
-      .from('note-files')
-      .upload(filePath, Buffer.from(mergedBytes), {
-        contentType: 'application/pdf',
-      })
-
-    if (uploadError) {
-      return res.status(500).json({ error: uploadError.message })
+    let content_url: string
+    try {
+      content_url = await uploadPdfToSupabase(
+        mergedBytes,
+        req.user!.id,
+        title,
+        supabaseClient
+      )
+    } catch (err) {
+      return res.status(500).json({ error: 'Failed to upload PDF to Supabase' })
     }
-
-    const { data: publicUrlData } = supabaseClient.storage
-      .from('note-files')
-      .getPublicUrl(filePath)
 
     const { data: note, error: noteError } = await supabaseClient
       .from('notes')
@@ -139,7 +134,7 @@ app.post(
         subject,
         description,
         author,
-        content_url: publicUrlData.publicUrl,
+        content_url: content_url,
         user_id: req.user!.id,
       })
       .select()
@@ -150,6 +145,60 @@ app.post(
     }
 
     res.status(201).json(note)
+  }
+)
+
+app.post(
+  '/api/notes/:id/reorder',
+  requireAuth,
+  async (req: AuthedRequest, res) => {
+    const { id } = req.params
+    const { pageOrder, noteTitle } = req.body as {
+      pageOrder?: number[]
+      noteTitle: string
+    }
+
+    if (!Array.isArray(pageOrder)) {
+      return res.status(400).json({ error: 'pageOrder must be an array' })
+    }
+
+    const supabaseClient = getRequestScopedClient(req)
+
+    const { data: note, error: noteError } = await supabaseClient
+      .from('notes')
+      .select('content_url, title')
+      .eq('id', id)
+      .single()
+
+    if (noteError || !note) {
+      return res.status(404).json({ error: 'Note not found!' })
+    }
+
+    let reorderedBytes: Uint8Array
+    try {
+      const originalBytes = await fetch(note.content_url).then((r) =>
+        r.arrayBuffer()
+      )
+      const originalPdf = await PDFDocument.load(originalBytes)
+
+      const newPdf = await PDFDocument.create()
+      const copiedPages = await newPdf.copyPages(originalPdf, pageOrder)
+      copiedPages.forEach((page) => newPdf.addPage(page))
+
+      reorderedBytes = await newPdf.save()
+    } catch (err) {
+      console.log(err)
+      return res.status(400).json({ error: 'Could not reorder PDF pages' })
+    }
+
+    const content_url = await uploadPdfToSupabase(
+      reorderedBytes,
+      req.user!.id,
+      note.title,
+      supabaseClient
+    )
+
+    res.json({ content_url })
   }
 )
 
