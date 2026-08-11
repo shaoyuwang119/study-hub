@@ -1,5 +1,7 @@
 ﻿import { useState } from 'react'
 
+import { useSubjects } from '@/lib/subjects'
+
 import {
   faXmark,
   faFileLines,
@@ -20,29 +22,16 @@ type UploadModalProps = {
   onClose: () => void
 }
 
-const SUBJECTS = [
-  // TODO: fetch subjects from database instead of hardcoding them
-  'Math',
-  'Science',
-  'English',
-  'History',
-  'Geography',
-  'Biology',
-  'Chemistry',
-  'Physics',
-  'Computer Science',
-  'Art',
-  'Music',
-].sort()
-
 function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
-  if (!open) return null
+  const SUBJECTS = useSubjects()
 
   const [title, setTitle] = useState('')
   const [subject, setSubject] = useState('')
   const [description, setDescription] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [uploadType, setUploadType] = useState<'pdf' | 'images'>('pdf')
+
+  if (!open) return null
 
   const removeFile = (index: number) => {
     setFiles((prev) => prev?.filter((_, i) => i !== index) ?? null)
@@ -174,7 +163,7 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Title (required)"
-              className="rounded-lg border border-gray-300 px-3 py-2 font-semibold text-zinc-800 placeholder:text-zinc-400 focus:border-gray-300 focus:outline-none"
+              className="rounded-lg border border-gray-300 px-3 py-2 font-medium text-zinc-800 placeholder:font-normal placeholder:text-zinc-400 focus:border-gray-300 focus:outline-none"
             />
 
             <select

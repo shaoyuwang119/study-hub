@@ -119,7 +119,7 @@ function NotePage() {
         return (
           <div className="flex h-full w-full gap-2">
             <div
-              className={`overflow-hidden bg-black shadow-md transition-all duration-200 ${
+              className={`overflow-hidden bg-black transition-all duration-200 ${
                 isExpanded
                   ? 'fixed inset-0 z-50 h-screen w-screen'
                   : 'sticky h-full w-[70%]'
@@ -147,7 +147,7 @@ function NotePage() {
             </div>
 
             {!isExpanded && (
-              <div className="flex flex-1 flex-col gap-3 bg-zinc-50 px-6 py-5">
+              <div className="flex flex-1 flex-col gap-3 bg-zinc-50 px-6 py-5 shadow-md">
                 <div className="flex gap-4 border-b border-gray-200">
                   {(['details', 'comments', 'related'] as const).map((tab) => (
                     <button

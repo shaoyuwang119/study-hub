@@ -1,5 +1,6 @@
 ﻿import { Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from '@/components'
+
 import Explore from '@/pages/Explore'
 import Home from '@/pages/Home'
 import Login from '@/pages/Login'
@@ -7,6 +8,7 @@ import NotePage from '@/pages/NotePage'
 import Profile from '@/pages/Profile'
 import NotFound from '@/pages/NotFound'
 import Library from '@/pages/Library'
+import NoteEditPage from '@/pages/NoteEditPage'
 
 function App() {
   return (
@@ -20,6 +22,7 @@ function App() {
         <Route path="/explore" element={<Explore />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/library" element={<Library />} />
+        <Route path="/notes/:id/edit" element={<NoteEditPage />} />
         <Route path="/notes/:id" element={<NotePage />} />
         <Route path="*" element={<NotFound />} />
       </Route>
