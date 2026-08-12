@@ -28,7 +28,8 @@ function NoteCard({ note, preview }: NoteCardProps) {
           {note.title}
         </h3>
         <p className="mt-1 text-xs text-gray-400">
-          {note.author} · {note.saves} saves
+          <span className="text-zinc-600">{note.author}</span> · {note.saves}{' '}
+          saves
         </p>
         <div className="mt-auto ml-auto w-fit rounded-md bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
           {note.subject}

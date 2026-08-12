@@ -87,7 +87,7 @@ function SortablePage({
   return (
     <div
       ref={ref}
-      className={`flex cursor-grab items-center gap-3 rounded-lg border border-gray-200 bg-white p-2 transition-shadow select-none active:cursor-grabbing ${isDragging ? 'z-20 shadow-xl' : ''}`}
+      className={`flex h-36 cursor-grab items-center gap-3 rounded-lg border border-gray-200 bg-white p-2 transition-shadow select-none active:cursor-grabbing ${isDragging ? 'z-20 shadow-xl' : ''}`}
     >
       <span className="w-5 text-center text-xs text-gray-400">
         {displayPosition + 1}
@@ -95,7 +95,7 @@ function SortablePage({
       <img
         src={entry.thumbnail}
         alt={`Page ${displayPosition + 1}`}
-        className="h-32 w-auto rounded border border-gray-200"
+        className="max-h-32 max-w-25 border border-gray-200"
       />
       <button
         type="button"
@@ -126,6 +126,9 @@ function NoteEditPage() {
   const [loadingFiles, setLoadingFiles] = useState(false)
   const [baselineSize, setBaselineSize] = useState(0)
 
+  const pageListRef = useRef<HTMLDivElement>(null)
+  const prevPageCountRef = useRef<number>(0)
+
   const [pageProgress, setPageProgress] = useState<{
     current: number
     total: number
@@ -154,6 +157,14 @@ function NoteEditPage() {
     clearTimeout(removeTimeoutRef.current)
     removeTimeoutRef.current = setTimeout(() => setError(null), 6500)
   }
+
+  useEffect(() => {
+    if (pages.length > prevPageCountRef.current) {
+      const el = pageListRef.current
+      el?.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+    }
+    prevPageCountRef.current = pages.length
+  }, [pages])
 
   useEffect(() => {
     async function fetchNote() {
@@ -320,6 +331,7 @@ function NoteEditPage() {
   }
 
   async function handleSave() {
+    const startTime = performance.now()
     if (state.status !== 'ready' || loadingFiles || saving) return
     const { note } = state
     setSaving(true)
@@ -350,7 +362,14 @@ function NoteEditPage() {
       })
 
       const formData = new FormData()
-      formData.append('noteTitle', title)
+      formData.append(
+        'newNoteData',
+        JSON.stringify({
+          title,
+          subject,
+          description,
+        })
+      )
       formData.append('pages', JSON.stringify(spec))
       fileList.forEach((file) => formData.append('files', file))
 
@@ -363,33 +382,18 @@ function NoteEditPage() {
         }
       )
 
+      console.log(res)
+
       if (!res.ok) {
         const body = await res.json().catch(() => null)
         alert(body?.error ?? 'Failed to update PDF pages.')
         return
       }
 
-      const { content_url, preview_url } = await res.json()
-
-      const { error: updateError } = await supabase
-        .from('notes')
-        .update({
-          title,
-          subject,
-          description,
-          content_url,
-          preview_url,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', note.id)
-
-      if (updateError) {
-        alert(updateError.message)
-        return
-      }
-
       navigate(`/notes/${note.id}`)
     } finally {
+      const endTime = performance.now()
+      console.log(`Save operation took ${(endTime - startTime).toFixed(2)}ms`)
       setSaving(false)
     }
   }
@@ -400,7 +404,10 @@ function NoteEditPage() {
   return (
     <div className="flex h-full w-full gap-8 p-6">
       <div className="flex h-full w-[50%] flex-col gap-3">
-        <div className="w-full flex-1 flex-col gap-2 space-y-2 overflow-y-auto rounded-2xl border border-gray-200 bg-zinc-50 p-3">
+        <div
+          ref={pageListRef}
+          className="w-full flex-1 flex-col gap-2 space-y-2 overflow-y-auto rounded-2xl border border-gray-200 bg-zinc-50 p-3"
+        >
           <DragDropProvider onDragEnd={handleDragEnd}>
             {pages.map((entry, displayPosition) => (
               <SortablePage

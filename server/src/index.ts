@@ -1,7 +1,7 @@
 ﻿import cors from 'cors'
 import express from 'express'
 import multer from 'multer'
-import { PDFDocument } from 'pdf-lib'
+import { PDFDocument, PDFPage } from 'pdf-lib'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 import { supabase } from '@/config/supabase'
@@ -16,10 +16,10 @@ import { renderFirstPageToPng } from './utils/generatePreview'
 import { get } from 'node:http'
 
 const app = express()
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3000 // hosts like Render assign the port dynamically via this env var
 
 const FILES_LIMIT = 200
-const MAX_PDF_SIZE = 50 * 1024 * 1024
+const MAX_PDF_SIZE = 50 * 1024 * 1024 // applied both per-file (multer) and to the final merged/rebuilt PDF
 
 console.log(process.env.SUPABASE_URL)
 
@@ -30,6 +30,7 @@ app.get('/', (req, res) => {
   res.send('Study Hub backend is running')
 })
 
+// Substring search over notes by title and/or author
 app.get('/api/notes/search', async (req, res) => {
   const { q, author } = req.query
 
@@ -55,6 +56,8 @@ app.get('/api/notes/search', async (req, res) => {
   res.json(data)
 })
 
+// Files stay in memory (not written to disk) since we need the raw bytes
+// immediately to merge them with pdf-lib
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_PDF_SIZE, files: FILES_LIMIT },
@@ -62,6 +65,7 @@ const upload = multer({
 
 const ALLOWED_TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg'])
 
+// upload notes route
 app.post(
   '/api/notes',
   requireAuth,
@@ -85,7 +89,8 @@ app.post(
       })
     }
 
-    // Merge everything into one PDF
+    // Merge everything into one PDF: PDFs contribute all their pages,
+    // images each become a single page sized to the image's own pixel dimensions
     let mergedBytes: Uint8Array
     try {
       const mergedPdf = await PDFDocument.create()
@@ -93,6 +98,8 @@ app.post(
       for (const file of files) {
         if (file.mimetype === 'application/pdf') {
           const srcPdf = await PDFDocument.load(file.buffer)
+          // Copying all pages in one call (not one at a time) lets pdf-lib
+          // dedupe resources - fonts, images - shared across those pages
           const pages = await mergedPdf.copyPages(
             srcPdf,
             srcPdf.getPageIndices()
@@ -115,6 +122,7 @@ app.post(
       }
       mergedBytes = await mergedPdf.save()
 
+      // prevent file from exceeding total size limit
       if (mergedBytes.length > MAX_PDF_SIZE) {
         return res.status(400).json({
           error: `The combined PDF is ${(mergedBytes.length / 1024 / 1024).toFixed(1)}MB, which exceeds the ${MAX_PDF_SIZE / 1024 / 1024}MB upload limit.`,
@@ -125,7 +133,7 @@ app.post(
       return res.status(400).json({ error: 'Could not merge files into a PDF' })
     }
 
-    // Act as the requesting user so Supabase's RLS applies normally
+    // Act as the requesting user so for Supabase's RLS policies
     const supabaseClient = getRequestScopedClient(req)
 
     let content_url: string
@@ -140,19 +148,6 @@ app.post(
       return res.status(500).json({ error: 'Failed to upload PDF to Supabase' })
     }
 
-    let preview_url: string | null = null
-    try {
-      const previewPng = await renderFirstPageToPng(mergedBytes)
-      preview_url = await uploadPreviewToSupabase(
-        previewPng,
-        req.user!.id,
-        title,
-        supabaseClient
-      )
-    } catch (err) {
-      console.error('Failed to generate note preview:', err)
-    }
-
     const { data: note, error: noteError } = await supabaseClient
       .from('notes')
       .insert({
@@ -162,7 +157,6 @@ app.post(
         author,
         saves: 0,
         content_url,
-        preview_url,
         user_id: req.user!.id,
       })
       .select()
@@ -175,13 +169,34 @@ app.post(
     }
 
     res.status(201).json(note)
+
+    // Generate and attach the preview after responding, so the client
+    // doesn't wait on it
+    try {
+      const previewPng = await renderFirstPageToPng(mergedBytes)
+      const preview_url = await uploadPreviewToSupabase(
+        previewPng,
+        req.user!.id,
+        title,
+        supabaseClient
+      )
+      await supabaseClient
+        .from('notes')
+        .update({ preview_url })
+        .eq('id', note.id)
+    } catch (err) {
+      console.error('Failed to generate note preview:', err)
+    }
   }
 )
 
+// Describes where one page in an edited note comes from
+// index and pageIndex are essentially the same thing, just named differently to avoid confusion
 type PageSpec =
   | { source: 'existing'; index: number }
   | { source: 'new'; fileIndex: number; pageIndex: number }
 
+// Edit notes route
 app.post(
   '/api/notes/:id/edit',
   requireAuth,
@@ -189,10 +204,12 @@ app.post(
   async (req: AuthedRequest, res) => {
     const { id } = req.params
     const files = (req.files as Express.Multer.File[]) ?? []
-    const { noteTitle } = req.body as { noteTitle: string }
+    const newNoteData = JSON.parse(req.body.newNoteData)
 
-    console.log('Editing note', id, 'with title', noteTitle, 'and files', files)
+    console.log('Editing note', id, 'and new files', files)
 
+    // `pages` arrives as a JSON string - multipart/form-data fields are
+    // always plain strings, so the client stringifies the page order
     let spec: PageSpec[]
     try {
       spec = JSON.parse(req.body.pages)
@@ -203,6 +220,8 @@ app.post(
       return res.status(400).json({ error: 'pages must be a non-empty array' })
     }
 
+    // console.log('Page spec:', spec)
+
     const invalid = files.find((f) => !ALLOWED_TYPES.has(f.mimetype))
     if (invalid) {
       return res
@@ -212,9 +231,10 @@ app.post(
 
     const supabaseClient = getRequestScopedClient(req)
 
+    // Fetch note
     const { data: note, error: noteError } = await supabaseClient
       .from('notes')
-      .select('content_url, title')
+      .select('*')
       .eq('id', id)
       .single()
 
@@ -230,6 +250,8 @@ app.post(
       const originalPdf = await PDFDocument.load(originalBytes)
       const newPdf = await PDFDocument.create()
 
+      // Lazily load and cache each uploaded file as a PDFDocument, since
+      // the same file can contribute more than one page to the spec
       const newPdfCache = new Map<number, PDFDocument>()
       const loadNewPdf = async (fileIndex: number) => {
         if (!newPdfCache.has(fileIndex)) {
@@ -241,10 +263,50 @@ app.post(
         return newPdfCache.get(fileIndex)!
       }
 
+      // Copy every existing page in one batched call (not one call per
+      // page) so pdf-lib dedupes shared resources - fonts, images -
+      // across them.
+      const existingIndices = spec
+        .filter((entry) => entry.source === 'existing')
+        .map((entry) => entry.index)
+      const copiedExistingPages = await newPdf.copyPages(
+        originalPdf,
+        existingIndices
+      )
+
+      // Same batching per uploaded file for newly-added PDF pages: group
+      // the page indices needed from each file before copying, so a file
+      // contributing multiple pages only has its resources copied once
+      const newPdfPageIndicesByFile = new Map<number, number[]>()
+      for (const entry of spec) {
+        if (entry.source !== 'new') continue
+        const file = files[entry.fileIndex]
+        if (!file || file.mimetype !== 'application/pdf') continue
+
+        const indices = newPdfPageIndicesByFile.get(entry.fileIndex) ?? []
+        indices.push(entry.pageIndex)
+        newPdfPageIndicesByFile.set(entry.fileIndex, indices)
+      }
+
+      const copiedNewPagesByFile = new Map<number, PDFPage[]>()
+      for (const [fileIndex, pageIndices] of newPdfPageIndicesByFile) {
+        const srcPdf = await loadNewPdf(fileIndex)
+        copiedNewPagesByFile.set(
+          fileIndex,
+          await newPdf.copyPages(srcPdf, pageIndices)
+        )
+      }
+      const newPageCursorByFile = new Map<number, number>()
+
+      // Walk the spec in final order, pulling already-copied pages out of
+      // the batches above by position instead of re-copying - this is
+      // what actually interleaves old and new pages the way the user
+      // arranged them
+      let existingPageCursor = 0
       for (const entry of spec) {
         if (entry.source === 'existing') {
-          const [page] = await newPdf.copyPages(originalPdf, [entry.index])
-          newPdf.addPage(page)
+          newPdf.addPage(copiedExistingPages[existingPageCursor])
+          existingPageCursor++
           continue
         }
 
@@ -253,9 +315,10 @@ app.post(
           throw new Error(`Missing uploaded file at index ${entry.fileIndex}`)
 
         if (file.mimetype === 'application/pdf') {
-          const srcPdf = await loadNewPdf(entry.fileIndex)
-          const [page] = await newPdf.copyPages(srcPdf, [entry.pageIndex])
+          const cursor = newPageCursorByFile.get(entry.fileIndex) ?? 0
+          const page = copiedNewPagesByFile.get(entry.fileIndex)![cursor]
           newPdf.addPage(page)
+          newPageCursorByFile.set(entry.fileIndex, cursor + 1)
         } else {
           const image =
             file.mimetype === 'image/png'
@@ -287,33 +350,60 @@ app.post(
 
     let publicUrl: string
     try {
+      // Falls back to the existing title if the client didn't send a new
+      // one - only used to name the uploaded file
       publicUrl = await uploadPdfToSupabase(
         resultBytes,
         req.user!.id,
-        noteTitle ?? note.title,
+        note.title,
         supabaseClient
       )
     } catch (err) {
       return res.status(500).json({ error: 'Failed to upload PDF to Supabase' })
     }
 
-    let previewUrl: string | null = null
+    // Update the note's row with the new data and urls
+    const { data: updatedNote, error: updateError } = await supabaseClient
+      .from('notes')
+      .update({
+        title: newNoteData.title ?? note.title,
+        subject: newNoteData.subject ?? note.subject,
+        description: newNoteData.description ?? note.description,
+        content_url: publicUrl,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', note.id)
+
+    if (updateError) {
+      console.error('Failed to update note:', updateError)
+      return res.status(500).json({ error: 'Failed to update note' })
+    }
+
+    res.sendStatus(201)
+
+    // Generate and attach the preview after responding, so the client
+    // doesn't wait on it
     try {
       const previewPng = await renderFirstPageToPng(resultBytes)
-      previewUrl = await uploadPreviewToSupabase(
+      const preview_url = await uploadPreviewToSupabase(
         previewPng,
         req.user!.id,
-        noteTitle ?? note.title,
+        newNoteData.title,
         supabaseClient
       )
+      await supabaseClient
+        .from('notes')
+        .update({ preview_url })
+        .eq('id', note.id)
     } catch (err) {
       console.error('Failed to generate note preview:', err)
     }
-
-    res.json({ content_url: publicUrl, preview_url: previewUrl })
   }
 )
 
+// Express recognizes this as an error handler specifically because it
+// takes 4 arguments (err, req, res, next) - any error thrown in an async
+// route or passed to next() ends up here
 app.use(
   (
     err: unknown,
