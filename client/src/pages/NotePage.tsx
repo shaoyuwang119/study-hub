@@ -103,7 +103,17 @@ function NotePage() {
         setState({ status: 'not-found' })
         return
       }
-      setState({ status: 'ready', note: data })
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', data.user_id)
+        .single()
+
+      setState({
+        status: 'ready',
+        note: { ...data, author: profile?.display_name ?? data.author },
+      })
     }
 
     fetchNote()

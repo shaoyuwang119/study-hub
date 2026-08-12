@@ -9,6 +9,45 @@ import { supabase } from '@/lib/supabase'
 import { faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
+type FloatingInputProps = {
+  id: string
+  label: string
+  type: string
+  value: string
+  onChange: (value: string) => void
+  minLength?: number
+}
+
+function FloatingInput({
+  id,
+  label,
+  type,
+  value,
+  onChange,
+  minLength,
+}: FloatingInputProps) {
+  return (
+    <div className="relative">
+      <input
+        id={id}
+        type={type}
+        placeholder=" "
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required
+        minLength={minLength}
+        className="peer block w-full rounded-lg border border-gray-300 bg-white px-3 pt-4 pb-1.5 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none"
+      />
+      <label
+        htmlFor={id}
+        className="absolute start-3 top-2 z-10 origin-[0] -translate-y-4 scale-75 bg-white px-1 text-sm text-gray-500 duration-150 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:scale-100 peer-focus:top-2! peer-focus:-translate-y-4! peer-focus:scale-75! peer-focus:text-blue-500"
+      >
+        {label}
+      </label>
+    </div>
+  )
+}
+
 function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -68,7 +107,11 @@ function Login() {
     if (error) {
       setMessage(error.message)
     } else if (isSignUp) {
-      setMessage('Check your email to confirm your account.')
+      if (data.user?.identities?.length === 0) {
+        setMessage('An account with this email already exists.')
+      } else {
+        setMessage('Check your email to confirm your account.')
+      }
     }
 
     setLoading(false)
@@ -76,7 +119,7 @@ function Login() {
   }
 
   return (
-    <div className="flex h-screen flex-col items-center bg-zinc-50 p-35 font-sans">
+    <div className="flex h-screen flex-col items-center bg-zinc-50 p-30 font-sans">
       <Header />
 
       <br></br>
@@ -107,49 +150,56 @@ function Login() {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {isSignUp && (
-            <input
+            <FloatingInput
+              id="name"
+              label="Name"
               type="text"
-              placeholder="Full Name"
               value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              required
-              className="w-full rounded-lg border border-gray-200 bg-zinc-50 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+              onChange={setDisplayName}
             />
           )}
-          <input
+
+          <FloatingInput
+            id="email"
+            label="Email"
             type="email"
-            placeholder="Email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full rounded-lg border border-gray-200 bg-zinc-50 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+            onChange={setEmail}
           />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            className="w-full rounded-lg border border-gray-200 bg-zinc-50 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
-          />
-          {isSignUp && (
-            <input
+
+          <div className="flex flex-col gap-1">
+            <FloatingInput
+              id="password"
+              label="Password"
               type="password"
-              placeholder="Confirm Password"
+              value={password}
+              onChange={setPassword}
+              minLength={8}
+            />
+            {isSignUp && password.length < 8 && (
+              <p className="text-xs text-amber-600">
+                Password must be at least 8 characters.
+              </p>
+            )}
+          </div>
+
+          {isSignUp && (
+            <FloatingInput
+              id="confirmPassword"
+              label="Confirm Password"
+              type="password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              minLength={6}
-              className="w-full rounded-lg border border-gray-200 bg-zinc-50 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+              onChange={setConfirmPassword}
+              minLength={8}
             />
           )}
+
           <button
             type="submit"
             disabled={loading}
-            className="transition-shadows mt-1 flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-blue-500 px-4 py-2 text-white duration-200 hover:bg-blue-600 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+            className="transition-shadows mt-1 flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-blue-500 px-4 py-2 text-white duration-200 hover:bg-blue-600 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? (
               <FontAwesomeIcon icon={faSpinner} spin />

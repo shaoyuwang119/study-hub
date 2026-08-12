@@ -32,7 +32,20 @@ function App() {
         setError(error.message)
         return
       }
-      setNotes(data)
+
+      const userIds = [...new Set(data.map((note) => note.user_id))]
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, display_name')
+        .in('id', userIds)
+
+      const authorById = new Map(profiles?.map((p) => [p.id, p.display_name]))
+      setNotes(
+        data.map((note) => ({
+          ...note,
+          author: authorById.get(note.user_id) ?? note.author,
+        }))
+      )
 
       const {
         data: { user },
