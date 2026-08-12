@@ -160,12 +160,19 @@ app.post(
         subject,
         description,
         author,
+        saves: 0,
         content_url,
         preview_url,
         user_id: req.user!.id,
       })
       .select()
       .single()
+
+    if (noteError || !note) {
+      return res
+        .status(500)
+        .json({ error: noteError?.message ?? 'Failed to create note' })
+    }
 
     res.status(201).json(note)
   }

@@ -19,8 +19,8 @@
     "jsx": "react-jsx",
 
     /* Linting */
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    "noUnusedLocals": true, // false only for deployment
+    "noUnusedParameters": true, // false only for deployment
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },

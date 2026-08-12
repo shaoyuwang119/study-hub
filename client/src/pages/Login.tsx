@@ -40,7 +40,7 @@ function FloatingInput({
       />
       <label
         htmlFor={id}
-        className="absolute start-3 top-2 z-10 origin-[0] -translate-y-4 scale-75 bg-white px-1 text-sm text-gray-500 duration-150 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:scale-100 peer-focus:top-2! peer-focus:-translate-y-4! peer-focus:scale-75! peer-focus:text-blue-500"
+        className="absolute inset-s-3 top-2 z-10 origin-left -translate-y-4 scale-75 bg-white px-1 text-sm text-gray-500 duration-150 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:scale-100 peer-focus:top-2! peer-focus:-translate-y-4! peer-focus:scale-75! peer-focus:text-blue-500"
       >
         {label}
       </label>

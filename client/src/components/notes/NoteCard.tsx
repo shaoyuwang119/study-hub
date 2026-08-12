@@ -1,4 +1,5 @@
 ﻿import type { Note } from '@/types'
+import { useState } from 'react'
 
 type NoteCardProps = {
   note: Note
@@ -9,26 +10,27 @@ type NoteCardProps = {
 const fallbackImg = 'https://placehold.co/100x150/?text=No\\nPreview'
 
 function NoteCard({ note, preview }: NoteCardProps) {
+  const [imageError, setImageError] = useState(false)
+  const showingFallback = imageError || !preview?.trim()
+
   return (
-    <div className="flex h-50 w-52 cursor-pointer flex-col overflow-hidden rounded-lg border border-gray-200 bg-white transition-shadow duration-200 hover:shadow-md">
-      {/* Image */}
+    <div className="flex h-54 w-56 cursor-pointer flex-col overflow-hidden rounded-lg border border-gray-200 bg-white transition-shadow duration-200 hover:shadow-md">
       <img
-        src={preview && preview.trim() ? preview : fallbackImg}
-        className="h-26 w-full bg-gray-100 object-cover"
-        onError={(e) => {
-          e.currentTarget.src = fallbackImg
-        }}
+        src={showingFallback ? fallbackImg : preview}
+        className={`h-26 w-full object-cover ${
+          showingFallback ? 'object-center' : 'object-top'
+        }`}
+        onError={() => setImageError(true)}
       />
 
-      {/* Content */}
-      <div className="flex-1 p-2.5">
+      <div className="flex h-full flex-col p-2.5">
         <h3 className="line-clamp text-sm font-semibold text-gray-800">
           {note.title}
         </h3>
         <p className="mt-1 text-xs text-gray-400">
           {note.author} · {note.saves} saves
         </p>
-        <div className="mt-3 ml-auto flex w-fit rounded-md bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
+        <div className="mt-auto ml-auto w-fit rounded-md bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
           {note.subject}
         </div>
       </div>

@@ -230,7 +230,7 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
             >
               {isSubmitting ? (
                 <>
-                  <FontAwesomeIcon icon={faSpinner} spinPulse />
+                  <FontAwesomeIcon icon={faSpinner} spin />
                   Submitting...
                 </>
               ) : (

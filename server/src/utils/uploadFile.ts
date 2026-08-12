@@ -31,7 +31,7 @@ async function uploadPreviewToSupabase(
   noteTitle: string,
   supabaseClient: SupabaseClient
 ): Promise<string> {
-  const filePath = `${userId}/${Date.now()}-${noteTitle}.png`
+  const filePath = `${userId}/${Date.now()}-${noteTitle}-preview.png`
 
   const { error: uploadError } = await supabaseClient.storage
     .from('note-previews')
