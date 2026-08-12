@@ -112,7 +112,7 @@ function NotePage() {
 
       setState({
         status: 'ready',
-        note: { ...data, author: profile?.display_name ?? data.author },
+        note: { ...data, author: profile?.display_name ?? 'Unknown User' },
       })
     }
 

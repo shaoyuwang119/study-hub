@@ -20,7 +20,7 @@ type SidebarItem = {
 const sidebarItems: SidebarItem[] = [
   { label: 'Home', page: '/', icon: faHouse },
   { label: 'Explore', page: '/explore', icon: faCompass },
-  { label: 'Library', page: '/library', icon: faBookOpen },
+  // { label: 'Library', page: '/library', icon: faBookOpen },
   { label: 'Profile', page: '/profile', icon: faUser },
 ]
 

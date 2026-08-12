@@ -7,8 +7,12 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { supabase } from '@/config/supabase'
 import type { AuthedRequest } from '@/middleware/auth'
 import { requireAuth } from '@/middleware/auth'
-import { uploadPdfToSupabase } from './utils/uploadFile'
+import {
+  uploadPdfToSupabase,
+  uploadPreviewToSupabase,
+} from './utils/uploadFile'
 import { getRequestScopedClient } from './utils/supabaseClient'
+import { renderFirstPageToPng } from './utils/generatePreview'
 import { get } from 'node:http'
 
 const app = express()
@@ -136,6 +140,19 @@ app.post(
       return res.status(500).json({ error: 'Failed to upload PDF to Supabase' })
     }
 
+    let preview_url: string | null = null
+    try {
+      const previewPng = await renderFirstPageToPng(mergedBytes)
+      preview_url = await uploadPreviewToSupabase(
+        previewPng,
+        req.user!.id,
+        title,
+        supabaseClient
+      )
+    } catch (err) {
+      console.error('Failed to generate note preview:', err)
+    }
+
     const { data: note, error: noteError } = await supabaseClient
       .from('notes')
       .insert({
@@ -143,15 +160,12 @@ app.post(
         subject,
         description,
         author,
-        content_url: content_url,
+        content_url,
+        preview_url,
         user_id: req.user!.id,
       })
       .select()
       .single()
-
-    if (noteError) {
-      return res.status(500).json({ error: noteError.message })
-    }
 
     res.status(201).json(note)
   }
@@ -273,11 +287,23 @@ app.post(
         supabaseClient
       )
     } catch (err) {
-      // console.log(err)
       return res.status(500).json({ error: 'Failed to upload PDF to Supabase' })
     }
 
-    res.json({ content_url: publicUrl })
+    let previewUrl: string | null = null
+    try {
+      const previewPng = await renderFirstPageToPng(resultBytes)
+      previewUrl = await uploadPreviewToSupabase(
+        previewPng,
+        req.user!.id,
+        noteTitle ?? note.title,
+        supabaseClient
+      )
+    } catch (err) {
+      console.error('Failed to generate note preview:', err)
+    }
+
+    res.json({ content_url: publicUrl, preview_url: previewUrl })
   }
 )
 

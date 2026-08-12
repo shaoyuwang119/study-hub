@@ -12,11 +12,12 @@ function Rightbar({ notes }: RightbarProps) {
     <aside className="w-72 overflow-y-auto border-l border-gray-200 bg-white px-4 py-8">
       <div className="text-xl text-zinc-800">My saved</div>
       <div className="mt-4 flex flex-col gap-y-2">
-        {notes.map((note) => (
+        <div className="text-sm text-zinc-400">No notes saved currently.</div>
+        {/* {notes.map((note) => (
           <Link key={note.id} to={`/notes/${note.id}`} className="block">
             <NoteCardMini note={note} />
           </Link>
-        ))}
+        ))} */}
       </div>
     </aside>
   )

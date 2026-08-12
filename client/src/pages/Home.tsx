@@ -162,7 +162,7 @@ function App() {
           <div className="flex flex-wrap gap-x-3 gap-y-4">
             {filteredNotes.map((note) => (
               <Link key={note.id} to={`/notes/${note.id}`}>
-                <NoteCard note={note} preview={note.content_url} />
+                <NoteCard note={note} preview={note.preview_url ?? ''} />
               </Link>
             ))}
           </div>

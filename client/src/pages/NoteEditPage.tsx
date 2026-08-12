@@ -369,7 +369,7 @@ function NoteEditPage() {
         return
       }
 
-      const { content_url } = await res.json()
+      const { content_url, preview_url } = await res.json()
 
       const { error: updateError } = await supabase
         .from('notes')
@@ -378,6 +378,7 @@ function NoteEditPage() {
           subject,
           description,
           content_url,
+          preview_url,
           updated_at: new Date().toISOString(),
         })
         .eq('id', note.id)
