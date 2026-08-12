@@ -87,7 +87,7 @@ function Explore() {
   const displayedNotes = results
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen flex-1">
       <div className="flex-1 flex-col bg-zinc-50 p-6">
         {/* Page header */}
         <div className="mb-6">

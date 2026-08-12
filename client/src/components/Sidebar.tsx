@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  faBookBookmark,
   faHouse,
   faCompass,
   faUser,
@@ -48,8 +49,9 @@ function Sidebar() {
         } `}
       >
         <div className="mb-8 flex flex-col gap-y-2">
-          <h1 className="text-3xl font-bold text-zinc-800">
-            {isMinimized ? 'S' : 'Study Hub'}
+          <h1 className="text-3xl font-bold text-blue-800">
+            <FontAwesomeIcon icon={faBookBookmark}></FontAwesomeIcon>
+            {isMinimized ? '' : ' Study Hub'}
           </h1>
         </div>
 

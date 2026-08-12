@@ -16,7 +16,7 @@ import { renderFirstPageToPng } from './utils/generatePreview'
 import { get } from 'node:http'
 
 const app = express()
-const PORT = 3000
+const PORT = process.env.PORT || 3000
 
 const FILES_LIMIT = 200
 const MAX_PDF_SIZE = 50 * 1024 * 1024

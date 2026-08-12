@@ -125,7 +125,7 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen flex-1">
       <div className="flex-1 flex-col overflow-y-auto bg-zinc-50 p-6">
         <div className="mb-4 flex flex-row justify-between">
           <div className="text-4xl font-medium text-zinc-900">Home</div>
@@ -156,7 +156,7 @@ function App() {
           </div>
         </div>
 
-        <div className="flex flex-col items-start gap-y-3">
+        <div className="flex flex-col gap-y-3">
           <div className="mx-1 text-xl">Continue studying</div>
           {error && <ErrorDisplay message={error} />}
           <div className="flex flex-wrap gap-x-3 gap-y-4">
