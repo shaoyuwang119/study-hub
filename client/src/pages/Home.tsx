@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import type { User } from '@supabase/supabase-js'
 
@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
 
 function App() {
+  const navigate = useNavigate()
   const [notes, setNotes] = useState<Note[]>([])
   const [error, setError] = useState<string | null>()
   const [searchQuery, setSearchQuery] = useState('')
@@ -75,23 +76,19 @@ function App() {
     subject: string
     description: string
     files: File[]
-    author: string
   }) => {
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession()
       if (!session) {
-        console.log('Not authenticated!')
-        return
+        throw new Error('Not authenticated')
       }
 
-      // Upload files to server to convert them to PDF
       const formData = new FormData()
       formData.append('title', newNote.title)
       formData.append('subject', newNote.subject)
       formData.append('description', newNote.description)
-      formData.append('author', newNote.author)
       newNote.files.forEach((file) => formData.append('files', file))
 
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/notes`, {
@@ -102,15 +99,15 @@ function App() {
 
       if (!res.ok) {
         const body = await res.json().catch(() => null)
-        setError(body?.error ?? 'Failed to upload note.')
-        return
+        throw new Error(body?.error ?? 'Failed to upload note.')
       }
 
       const noteData = await res.json()
       setNotes((prev) => [...prev, noteData])
-      setShowUpload(false)
+      navigate(`/notes/${noteData.id}`)
     } catch (err) {
       console.error(err)
+      throw err
     }
   }
 
@@ -149,7 +146,7 @@ function App() {
         <div className="flex flex-col items-start gap-y-3">
           <div className="mx-1 text-xl">Continue studying</div>
           {error && <ErrorDisplay message={error} />}
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-x-3 gap-y-4">
             {filteredNotes.map((note) => (
               <Link key={note.id} to={`/notes/${note.id}`}>
                 <NoteCard note={note} preview={note.content_url} />

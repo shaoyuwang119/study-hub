@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
-import { formatMB } from '@/lib/formatFileSize'
+import { formatSize } from '@/lib/formatFileSize'
 
 import { Sidebar, ErrorDisplay } from '@/components'
 import type { User } from '@supabase/supabase-js'
@@ -227,7 +227,7 @@ function NotePage() {
                     </p>
                     {fileSize !== null && (
                       <p className="text-sm text-gray-600">
-                        File size: {formatMB(fileSize)}
+                        File size: {formatSize(fileSize)}
                       </p>
                     )}
 

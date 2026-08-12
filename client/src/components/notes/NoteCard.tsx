@@ -10,7 +10,7 @@ const fallbackImg = 'https://placehold.co/100x150/?text=No\\nPreview'
 
 function NoteCard({ note, preview }: NoteCardProps) {
   return (
-    <div className="flex h-50 w-56 cursor-pointer flex-col overflow-hidden rounded-lg border border-gray-200 bg-white transition-shadow duration-200 hover:shadow-md">
+    <div className="flex h-50 w-52 cursor-pointer flex-col overflow-hidden rounded-lg border border-gray-200 bg-white transition-shadow duration-200 hover:shadow-md">
       {/* Image */}
       <img
         src={preview && preview.trim() ? preview : fallbackImg}

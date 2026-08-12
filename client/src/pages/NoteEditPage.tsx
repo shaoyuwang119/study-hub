@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, type ComponentProps } from 'react'
+﻿import { useEffect, useRef, useState, type ComponentProps } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import * as pdfjsLib from 'pdfjs-dist'
 
@@ -11,6 +11,14 @@ import { useSubjects } from '@/lib/subjects'
 
 import type { Note } from '@/types'
 
+import { formatSize } from '@/lib/formatFileSize'
+
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faSpinner,
+  faCircleExclamation,
+} from '@fortawesome/free-solid-svg-icons'
+
 type FetchState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
@@ -20,15 +28,9 @@ type PageSource =
   | { source: 'existing'; index: number }
   | { source: 'new'; file: File; pageIndex: number }
 
-type PageEntryData = { thumbnail: string } & PageSource
-
-type PageEntry = { id: string } & PageEntryData
+type PageEntry = { id: string; thumbnail: string } & PageSource
 
 const MAX_PDF_SIZE = 50 * 1024 * 1024
-
-function formatMB(bytes: number): string {
-  return `${(bytes / 1024 / 1024).toFixed(1)}MB`
-}
 
 function getStagedNewFileSize(pages: PageEntry[]): number {
   const seen = new Set<File>()
@@ -47,7 +49,8 @@ function attachId<T extends object>(entry: T): T & { id: string } {
 }
 
 async function renderPdfThumbnails(
-  source: { url: string } | { data: ArrayBuffer }
+  source: { url: string } | { data: ArrayBuffer },
+  onProgress?: (current: number, total: number) => void
 ): Promise<string[]> {
   const pdf = await pdfjsLib.getDocument(source).promise
   const thumbnails: string[] = []
@@ -61,6 +64,7 @@ async function renderPdfThumbnails(
     const context = canvas.getContext('2d')!
     await page.render({ canvasContext: context, canvas, viewport }).promise
     thumbnails.push(canvas.toDataURL())
+    onProgress?.(i, pdf.numPages)
   }
 
   return thumbnails
@@ -117,11 +121,39 @@ function NoteEditPage() {
   const [subject, setSubject] = useState('')
   const [description, setDescription] = useState('')
 
-  const [pageThumbnails, setPageThumbnails] = useState<string[]>([])
   const [pages, setPages] = useState<PageEntry[]>([])
   const [saving, setSaving] = useState(false)
-
+  const [loadingFiles, setLoadingFiles] = useState(false)
   const [baselineSize, setBaselineSize] = useState(0)
+
+  const [pageProgress, setPageProgress] = useState<{
+    current: number
+    total: number
+  } | null>(null)
+  const [fileProgress, setFileProgress] = useState<{
+    current: number
+    total: number
+  } | null>(null)
+
+  const [error, setError] = useState<string | null>(null)
+  const [errorVisible, setErrorVisible] = useState(false)
+  const fadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  )
+  const removeTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  )
+
+  function showError(message: string) {
+    setError(message)
+    setErrorVisible(true)
+
+    clearTimeout(fadeTimeoutRef.current)
+    fadeTimeoutRef.current = setTimeout(() => setErrorVisible(false), 6000)
+
+    clearTimeout(removeTimeoutRef.current)
+    removeTimeoutRef.current = setTimeout(() => setError(null), 6500)
+  }
 
   useEffect(() => {
     async function fetchNote() {
@@ -151,17 +183,21 @@ function NoteEditPage() {
   useEffect(() => {
     if (state.status !== 'ready') return
 
-    renderPdfThumbnails({ url: state.note.content_url }).then((thumbnails) => {
-      setPages(
-        thumbnails.map((thumbnail, index) =>
-          attachId({
-            thumbnail,
-            source: 'existing',
-            index,
-          })
+    setLoadingFiles(true)
+    renderPdfThumbnails({ url: state.note.content_url }, (current, total) =>
+      setPageProgress({ current, total })
+    )
+      .then((thumbnails) => {
+        setPages(
+          thumbnails.map((thumbnail, index) =>
+            attachId({ thumbnail, source: 'existing', index })
+          )
         )
-      )
-    })
+      })
+      .finally(() => {
+        setLoadingFiles(false)
+        setPageProgress(null)
+      })
   }, [state])
 
   useEffect(() => {
@@ -171,36 +207,37 @@ function NoteEditPage() {
     )
   }, [state])
 
-  async function extractPageEntries(file: File): Promise<PageEntryData[]> {
+  async function extractPageEntries(
+    file: File,
+    onProgress?: (current: number, total: number) => void
+  ): Promise<PageEntry[]> {
     if (file.type === 'application/pdf') {
       const buffer = await file.arrayBuffer()
-      const thumbnails = await renderPdfThumbnails({ data: buffer })
-      return thumbnails.map((thumbnail, pageIndex) => ({
-        source: 'new' as const,
-        file,
-        pageIndex,
-        thumbnail,
-      }))
+      const thumbnails = await renderPdfThumbnails({ data: buffer }, onProgress)
+      return thumbnails.map((thumbnail, pageIndex) =>
+        attachId({ source: 'new' as const, file, pageIndex, thumbnail })
+      )
     }
 
     return [
-      {
+      attachId({
         source: 'new' as const,
         file,
         pageIndex: 0,
         thumbnail: URL.createObjectURL(file),
-      },
+      }),
     ]
   }
 
   async function handleAddFiles(fileList: FileList | null) {
     if (!fileList?.length) return
     const files = Array.from(fileList)
+    setError(null)
 
     const oversized = files.find((f) => f.size > MAX_PDF_SIZE)
     if (oversized) {
-      alert(
-        `"${oversized.name}" is ${formatMB(oversized.size)}, over the ${formatMB(MAX_PDF_SIZE)} limit.`
+      showError(
+        `"${oversized.name}" is ${formatSize(oversized.size)}, over the ${formatSize(MAX_PDF_SIZE)} limit.`
       )
       return
     }
@@ -209,19 +246,29 @@ function NoteEditPage() {
     const projectedSize =
       baselineSize + getStagedNewFileSize(pages) + newFilesSize
     if (projectedSize > MAX_PDF_SIZE) {
-      alert(
-        `This would bring the PDF to roughly ${formatMB(projectedSize)}, over the ${formatMB(MAX_PDF_SIZE)} limit.`
+      showError(
+        `Failure: This would bring the PDF to roughly ${formatSize(projectedSize)}, over the ${formatSize(MAX_PDF_SIZE)} limit.`
       )
       return
     }
 
-    const newEntries: PageEntry[] = []
-    for (const file of files) {
-      const entries = await extractPageEntries(file)
-      entries.forEach((entry) => newEntries.push(attachId(entry)))
+    setLoadingFiles(true)
+    try {
+      const newEntries: PageEntry[] = []
+      for (let i = 0; i < files.length; i++) {
+        setFileProgress({ current: i + 1, total: files.length })
+        const entries = await extractPageEntries(files[i])
+        newEntries.push(...entries)
+      }
+      setPages((prev) => [...prev, ...newEntries])
+    } catch {
+      showError(
+        "Could not read one of the selected files — make sure it's a valid PDF, PNG, or JPEG."
+      )
+    } finally {
+      setLoadingFiles(false)
+      setFileProgress(null)
     }
-
-    setPages((prev) => [...prev, ...newEntries])
   }
 
   function handleDeletePage(id: string) {
@@ -238,8 +285,19 @@ function NoteEditPage() {
     )
       return
 
-    const entries = await extractPageEntries(file)
-    setPages(entries.map((entry) => attachId(entry)))
+    setError(null)
+    setLoadingFiles(true)
+    try {
+      const entries = await extractPageEntries(file, (current, total) =>
+        setPageProgress({ current, total })
+      )
+      setPages(entries)
+    } catch {
+      showError("Could not read this file — make sure it's a valid PDF.")
+    } finally {
+      setLoadingFiles(false)
+      setPageProgress(null)
+    }
   }
 
   const handleDragEnd: NonNullable<
@@ -262,7 +320,7 @@ function NoteEditPage() {
   }
 
   async function handleSave() {
-    if (state.status !== 'ready') return
+    if (state.status !== 'ready' || loadingFiles || saving) return
     const { note } = state
     setSaving(true)
 
@@ -340,7 +398,7 @@ function NoteEditPage() {
 
   return (
     <div className="flex h-full w-full gap-8 p-6">
-      <div className="flex h-full w-[50%] flex-col gap-2">
+      <div className="flex h-full w-[50%] flex-col gap-3">
         <div className="w-full flex-1 flex-col gap-2 space-y-2 overflow-y-auto rounded-2xl border border-gray-200 bg-zinc-50 p-3">
           <DragDropProvider onDragEnd={handleDragEnd}>
             {pages.map((entry, displayPosition) => (
@@ -354,26 +412,50 @@ function NoteEditPage() {
           </DragDropProvider>
         </div>
 
-        <div className="flex gap-2">
-          <label className="cursor-pointer rounded-md border border-gray-300 px-3 py-1.5 text-xs">
+        <div className="flex items-center gap-2">
+          <label
+            className={`cursor-pointer rounded-md border border-gray-300 px-3 py-1.5 text-xs ${loadingFiles ? 'pointer-events-none opacity-50' : ''}`}
+          >
             Add page(s)
             <input
               type="file"
               accept="application/pdf,image/png,image/jpeg"
               multiple
               className="hidden"
+              disabled={loadingFiles}
               onChange={(e) => handleAddFiles(e.target.files)}
             />
           </label>
-          <label className="cursor-pointer rounded-md border border-gray-300 px-3 py-1.5 text-xs">
+          <label
+            className={`cursor-pointer rounded-md border border-gray-300 px-3 py-1.5 text-xs ${loadingFiles ? 'pointer-events-none opacity-50' : ''}`}
+          >
             Replace PDF
             <input
               type="file"
               accept="application/pdf"
               className="hidden"
+              disabled={loadingFiles}
               onChange={(e) => handleReplacePdf(e.target.files)}
             />
           </label>
+
+          {loadingFiles ? (
+            <span className="flex flex-1 items-center gap-1.5 text-xs text-gray-500">
+              <FontAwesomeIcon icon={faSpinner} spinPulse />
+              {fileProgress
+                ? `Processing file ${fileProgress.current} of ${fileProgress.total}`
+                : pageProgress
+                  ? `Loading page ${pageProgress.current} of ${pageProgress.total}`
+                  : 'Processing files…'}
+            </span>
+          ) : error ? (
+            <span
+              className={`flex-1 text-xs text-red-600 transition-opacity duration-500 ${errorVisible ? 'opacity-100' : 'opacity-0'}`}
+            >
+              <FontAwesomeIcon icon={faCircleExclamation} className="mr-1" />
+              {error}
+            </span>
+          ) : null}
         </div>
       </div>
 
@@ -414,7 +496,7 @@ function NoteEditPage() {
           </button>
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || loadingFiles}
             className="cursor-pointer rounded-md bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
           >
             {saving ? 'Saving...' : 'Save'}

@@ -1,4 +1,6 @@
-﻿// client/src/lib/formatFileSize.ts
-export function formatMB(bytes: number): string {
-  return `${(bytes / 1024 / 1024).toFixed(1)}MB`
+﻿export function formatSize(bytes: number): string {
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`
+  }
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }

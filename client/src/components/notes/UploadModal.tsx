@@ -7,6 +7,7 @@ import {
   faFileLines,
   faFileImage,
   faCloudArrowUp,
+  faSpinner,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
@@ -17,8 +18,7 @@ type UploadModalProps = {
     subject: string
     description: string
     files: File[]
-    author: string
-  }) => void
+  }) => Promise<void>
   onClose: () => void
 }
 
@@ -30,8 +30,25 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
   const [description, setDescription] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [uploadType, setUploadType] = useState<'pdf' | 'images'>('pdf')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   if (!open) return null
+
+  const resetState = () => {
+    setTitle('')
+    setSubject('')
+    setDescription('')
+    setFiles([])
+    setUploadType('pdf')
+    setIsSubmitting(false)
+    setSubmitError(null)
+  }
+
+  const handleClose = () => {
+    resetState()
+    onClose()
+  }
 
   const removeFile = (index: number) => {
     setFiles((prev) => prev?.filter((_, i) => i !== index) ?? null)
@@ -43,15 +60,16 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-zinc-800">Upload Notes</h2>
           <button
-            onClick={onClose}
-            className="cursor-pointer text-xl text-gray-500 hover:text-black"
+            onClick={handleClose}
+            disabled={isSubmitting}
+            className="cursor-pointer text-xl text-gray-500 hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
           >
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
 
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault()
 
             if (!title || !subject) {
@@ -64,9 +82,24 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
               return
             }
 
-            // TODO: get author from user context instead of hardcoding it
-            onSubmit({ title, subject, description, files, author: 'John D' })
-            onClose()
+            setIsSubmitting(true)
+            setSubmitError(null)
+            try {
+              await onSubmit({
+                title,
+                subject,
+                description,
+                files,
+              })
+              resetState()
+              onClose()
+            } catch (err) {
+              setSubmitError(
+                err instanceof Error ? err.message : 'Failed to upload note.'
+              )
+            } finally {
+              setIsSubmitting(false)
+            }
           }}
           className="flex gap-6"
         >
@@ -122,7 +155,7 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
                   ? 'PDF'
                   : 'PNG, JPG, JPEG, WEBP, SVG, HEIC'}
                 . Max {uploadType === 'pdf' ? '1 file' : '20 files'}. Max size
-                20MB per file.
+                50MB total.
               </div>
             </label>
             <div className="flex max-h-40 flex-col overflow-y-auto">
@@ -187,12 +220,22 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
               placeholder="Description"
               className="flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-zinc-800 placeholder:text-zinc-400 focus:border-gray-300 focus:outline-none"
             />
-
+            {submitError && (
+              <p className="text-xs text-red-500">{submitError}</p>
+            )}
             <button
               type="submit"
-              className="cursor-pointer rounded-lg bg-blue-500 p-3 text-white transition hover:bg-blue-600"
+              disabled={isSubmitting}
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-500 p-3 text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-blue-300"
             >
-              Submit
+              {isSubmitting ? (
+                <>
+                  <FontAwesomeIcon icon={faSpinner} spinPulse />
+                  Submitting...
+                </>
+              ) : (
+                'Submit'
+              )}
             </button>
           </div>
         </form>
