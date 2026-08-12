@@ -14,6 +14,9 @@ import { get } from 'node:http'
 const app = express()
 const PORT = 3000
 
+const FILES_LIMIT = 200
+const MAX_PDF_SIZE = 50 * 1024 * 1024
+
 console.log(process.env.SUPABASE_URL)
 
 app.use(cors())
@@ -50,7 +53,7 @@ app.get('/api/notes/search', async (req, res) => {
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024, files: 20 },
+  limits: { fileSize: MAX_PDF_SIZE, files: FILES_LIMIT },
 })
 
 const ALLOWED_TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg'])
@@ -58,7 +61,7 @@ const ALLOWED_TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg'])
 app.post(
   '/api/notes',
   requireAuth,
-  upload.array('files', 20),
+  upload.array('files', FILES_LIMIT),
   async (req: AuthedRequest, res) => {
     const files = req.files as Express.Multer.File[]
     const { title, subject, description, author } = req.body
@@ -107,6 +110,12 @@ app.post(
         }
       }
       mergedBytes = await mergedPdf.save()
+
+      if (mergedBytes.length > MAX_PDF_SIZE) {
+        return res.status(400).json({
+          error: `The combined PDF is ${(mergedBytes.length / 1024 / 1024).toFixed(1)}MB, which exceeds the ${MAX_PDF_SIZE / 1024 / 1024}MB upload limit.`,
+        })
+      }
     } catch (err) {
       console.log(err)
       return res.status(400).json({ error: 'Could not merge files into a PDF' })
@@ -148,18 +157,36 @@ app.post(
   }
 )
 
+type PageSpec =
+  | { source: 'existing'; index: number }
+  | { source: 'new'; fileIndex: number; pageIndex: number }
+
 app.post(
-  '/api/notes/:id/reorder',
+  '/api/notes/:id/edit',
   requireAuth,
+  upload.array('files', FILES_LIMIT),
   async (req: AuthedRequest, res) => {
     const { id } = req.params
-    const { pageOrder, noteTitle } = req.body as {
-      pageOrder?: number[]
-      noteTitle: string
+    const files = (req.files as Express.Multer.File[]) ?? []
+    const { noteTitle } = req.body as { noteTitle: string }
+
+    console.log('Editing note', id, 'with title', noteTitle, 'and files', files)
+
+    let spec: PageSpec[]
+    try {
+      spec = JSON.parse(req.body.pages)
+    } catch {
+      return res.status(400).json({ error: 'pages must be valid JSON' })
+    }
+    if (!Array.isArray(spec) || spec.length === 0) {
+      return res.status(400).json({ error: 'pages must be a non-empty array' })
     }
 
-    if (!Array.isArray(pageOrder)) {
-      return res.status(400).json({ error: 'pageOrder must be an array' })
+    const invalid = files.find((f) => !ALLOWED_TYPES.has(f.mimetype))
+    if (invalid) {
+      return res
+        .status(400)
+        .json({ error: `Unsupported file type: ${invalid.originalname}.` })
     }
 
     const supabaseClient = getRequestScopedClient(req)
@@ -174,105 +201,106 @@ app.post(
       return res.status(404).json({ error: 'Note not found!' })
     }
 
-    let reorderedBytes: Uint8Array
+    let resultBytes: Uint8Array
     try {
       const originalBytes = await fetch(note.content_url).then((r) =>
         r.arrayBuffer()
       )
       const originalPdf = await PDFDocument.load(originalBytes)
-
       const newPdf = await PDFDocument.create()
-      const copiedPages = await newPdf.copyPages(originalPdf, pageOrder)
-      copiedPages.forEach((page) => newPdf.addPage(page))
 
-      reorderedBytes = await newPdf.save()
+      const newPdfCache = new Map<number, PDFDocument>()
+      const loadNewPdf = async (fileIndex: number) => {
+        if (!newPdfCache.has(fileIndex)) {
+          newPdfCache.set(
+            fileIndex,
+            await PDFDocument.load(files[fileIndex]!.buffer)
+          )
+        }
+        return newPdfCache.get(fileIndex)!
+      }
+
+      for (const entry of spec) {
+        if (entry.source === 'existing') {
+          const [page] = await newPdf.copyPages(originalPdf, [entry.index])
+          newPdf.addPage(page)
+          continue
+        }
+
+        const file = files[entry.fileIndex]
+        if (!file)
+          throw new Error(`Missing uploaded file at index ${entry.fileIndex}`)
+
+        if (file.mimetype === 'application/pdf') {
+          const srcPdf = await loadNewPdf(entry.fileIndex)
+          const [page] = await newPdf.copyPages(srcPdf, [entry.pageIndex])
+          newPdf.addPage(page)
+        } else {
+          const image =
+            file.mimetype === 'image/png'
+              ? await newPdf.embedPng(file.buffer)
+              : await newPdf.embedJpg(file.buffer)
+          const page = newPdf.addPage([image.width, image.height])
+          page.drawImage(image, {
+            x: 0,
+            y: 0,
+            width: image.width,
+            height: image.height,
+          })
+        }
+      }
+
+      resultBytes = await newPdf.save()
+
+      if (resultBytes.length > MAX_PDF_SIZE) {
+        return res.status(400).json({
+          error: `The combined PDF is ${(resultBytes.length / 1024 / 1024).toFixed(1)}MB, which exceeds the ${MAX_PDF_SIZE / 1024 / 1024}MB upload limit.`,
+        })
+      }
     } catch (err) {
       console.log(err)
-      return res.status(400).json({ error: 'Could not reorder PDF pages' })
+      return res
+        .status(400)
+        .json({ error: 'Could not build PDF from the requested pages' })
     }
 
-    const content_url = await uploadPdfToSupabase(
-      reorderedBytes,
-      req.user!.id,
-      note.title,
-      supabaseClient
-    )
+    let publicUrl: string
+    try {
+      publicUrl = await uploadPdfToSupabase(
+        resultBytes,
+        req.user!.id,
+        noteTitle ?? note.title,
+        supabaseClient
+      )
+    } catch (err) {
+      // console.log(err)
+      return res.status(500).json({ error: 'Failed to upload PDF to Supabase' })
+    }
 
-    res.json({ content_url })
+    res.json({ content_url: publicUrl })
   }
 )
 
-// app.get('/api/notes/:id', async (req, res) => {
-//   const { id } = req.params
+app.use(
+  (
+    err: unknown,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          error: `One of the files is over the ${MAX_PDF_SIZE / 1024 / 1024}MB per-file limit.`,
+        })
+      }
+      return res.status(400).json({ error: err.message })
+    }
 
-//   const { data, error } = await supabase
-//     .from('notes')
-//     .select('*')
-//     .eq('id', id)
-//     .single()
-
-//   if (error) {
-//     return res.status(404).json({
-//       message: 'Page not found!',
-//     })
-//   }
-
-//   res.json(data)
-// })
-
-// app.post('/api/notes', requireAuth, async (req: AuthedRequest, res) => {
-//   const { title, subject, description, content_url } = req.body
-//   const saves = 0
-
-//   // Use the verified user's info instead of trusting anything
-//   // the client could put in the request body.
-//   const author = req.user!.id
-
-//   const newNote = {
-//     title,
-//     subject,
-//     description,
-//     content_url,
-//     author,
-//     saves,
-//   }
-
-//   const { data, error } = await supabase.from('notes').insert(newNote).select()
-
-//   if (error) {
-//     console.log(error.message)
-//     return res.status(500).json({ error: error.message })
-//   }
-
-//   res.json(data[0])
-// })
-
-// app.delete('/api/notes/:id', requireAuth, async (req: AuthedRequest, res) => {
-//   const { id } = req.params
-
-//   const { data, error } = await supabase
-//     .from('notes')
-//     .delete()
-//     .eq('id', id)
-//     .select()
-
-//   if (error) {
-//     return res.status(403).json({
-//       message: 'Delete failed',
-//       error: error.message,
-//     })
-//   }
-
-//   if (!data || data.length === 0) {
-//     return res.status(404).json({
-//       message: 'No note deleted (not found or no permission)',
-//     })
-//   }
-
-//   res.json({
-//     message: 'Note deleted successfully',
-//   })
-// })
+    console.error(err)
+    res.status(500).json({ error: 'Unexpected server error' })
+  }
+)
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`)

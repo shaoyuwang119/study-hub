@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
+import { formatMB } from '@/lib/formatFileSize'
 
 import { Sidebar, ErrorDisplay } from '@/components'
 import type { User } from '@supabase/supabase-js'
@@ -26,6 +27,7 @@ function NotePage() {
 
   const [state, setState] = useState<FetchState>({ status: 'loading' })
   const [user, setUser] = useState<User>()
+  const [fileSize, setFileSize] = useState<number | null>(null)
 
   const [activeTab, setActiveTab] = useState<
     'details' | 'comments' | 'related'
@@ -59,6 +61,14 @@ function NotePage() {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
+
+  useEffect(() => {
+    if (state.status !== 'ready') return
+
+    fetch(state.note.content_url, { method: 'HEAD' })
+      .then((r) => setFileSize(Number(r.headers.get('content-length')) || null))
+      .catch(() => setFileSize(null))
+  }, [state])
 
   useEffect(() => {
     async function fetchNote() {
@@ -215,6 +225,11 @@ function NotePage() {
                     <p className="text-sm text-gray-600">
                       Date published: {publishedDate}
                     </p>
+                    {fileSize !== null && (
+                      <p className="text-sm text-gray-600">
+                        File size: {formatMB(fileSize)}
+                      </p>
+                    )}
 
                     <p className="mt-2 text-gray-800">{note.description}</p>
                   </div>
