@@ -173,12 +173,13 @@ function NoteEditPage() {
         .from('notes')
         .select('*')
         .eq('id', id)
-        .single()
+        .maybeSingle()
 
       if (error || !data) {
         setState({
           status: 'error',
-          message: error?.message ?? 'Note not found',
+          message:
+            error?.message ?? 'This note does not exist or has been deleted.',
         })
         return
       }
@@ -462,7 +463,7 @@ function NoteEditPage() {
   if (state.status === 'loading') return <Loading />
   if (state.status === 'error')
     return (
-      <div className="flex-1 bg-zinc-50 p-6">
+      <div className="w-full p-4">
         <ErrorDisplay message={state.message} />
       </div>
     )

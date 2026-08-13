@@ -4,7 +4,7 @@ import { Navigate, Outlet } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 
 import { supabase } from '@/lib/supabase'
-import { Sidebar, Loading } from '@/components'
+import { Sidebar } from '@/components'
 
 // ProtectedRoute ensures that only authenticated users
 // are allowed to view protected pages(dashboard, explore, note pages, etc.)
@@ -34,7 +34,7 @@ export default function ProtectedRoute() {
   }, [])
 
   if (loading) {
-    return <Loading />
+    return
   }
 
   if (!session) {

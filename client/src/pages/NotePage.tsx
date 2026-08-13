@@ -103,8 +103,7 @@ function NotePage() {
         .from('notes')
         .select('*')
         .eq('id', id)
-        .select()
-        .single()
+        .maybeSingle()
 
       if (error) {
         setState({ status: 'error', message: error.message })
@@ -136,9 +135,15 @@ function NotePage() {
     switch (state.status) {
       case 'loading':
         return <Loading />
+      case 'not-found':
+        return (
+          <div className="w-full p-4">
+            <ErrorDisplay message="This note doesn't exist or has been deleted." />
+          </div>
+        )
       case 'error':
         return (
-          <div>
+          <div className="w-full p-4">
             <ErrorDisplay message={state.message}></ErrorDisplay>
           </div>
         )

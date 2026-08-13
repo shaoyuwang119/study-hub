@@ -14,7 +14,7 @@ function NoteCard({ note, preview }: NoteCardProps) {
   const showingFallback = imageError || !preview?.trim()
 
   return (
-    <div className="flex h-54 w-56 cursor-pointer flex-col overflow-hidden rounded-lg border border-gray-200 bg-white transition-shadow duration-200 hover:shadow-md">
+    <div className="flex h-54 w-56 cursor-pointer flex-col overflow-hidden rounded-lg border border-gray-200 bg-white transition-shadow duration-100 hover:shadow-md">
       <img
         src={showingFallback ? fallbackImg : preview}
         className={`h-26 w-full object-cover ${

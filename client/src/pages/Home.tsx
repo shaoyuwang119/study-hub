@@ -3,18 +3,26 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import type { User } from '@supabase/supabase-js'
 
-import { NoteCard, Rightbar, UploadModal, ErrorDisplay } from '@/components'
+import {
+  NoteCard,
+  Rightbar,
+  UploadModal,
+  ErrorDisplay,
+  Loading,
+} from '@/components'
 
 import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
+import { usePageTitle } from '@/lib/usePageTitle'
 
-function App() {
+function Home() {
   const navigate = useNavigate()
   const [notes, setNotes] = useState<Note[]>([])
   const [error, setError] = useState<string | null>()
   const [searchQuery, setSearchQuery] = useState('')
-
   const [showUpload, setShowUpload] = useState(false)
+
+  const [loading, setLoading] = useState(true)
 
   const filteredNotes = notes.filter((note) => {
     const query = searchQuery.toLowerCase()
@@ -24,6 +32,8 @@ function App() {
       note.description?.toLowerCase().includes(query)
     )
   })
+
+  usePageTitle('Home | StudyNote')
 
   useEffect(() => {
     const fetchNotes = async () => {
@@ -50,7 +60,7 @@ function App() {
       const {
         data: { user },
       } = await supabase.auth.getUser()
-      console.log(user)
+      setLoading(false)
     }
 
     fetchNotes()
@@ -160,11 +170,18 @@ function App() {
           <div className="mx-1 text-xl">Continue studying</div>
           {error && <ErrorDisplay message={error} />}
           <div className="flex flex-wrap gap-x-3 gap-y-4">
-            {filteredNotes.map((note) => (
-              <Link key={note.id} to={`/notes/${note.id}`}>
-                <NoteCard note={note} preview={note.preview_url ?? ''} />
-              </Link>
-            ))}
+            {loading ? (
+              <div className="flex h-50 w-full items-center justify-center">
+                <Loading />
+              </div>
+            ) : (
+              filteredNotes.map((note) => (
+                <Link key={note.id} to={`/notes/${note.id}`}>
+                  <NoteCard note={note} preview={note.preview_url ?? ''} />
+                </Link>
+              ))
+            )}
+            {}
           </div>
         </div>
       </div>
@@ -174,4 +191,4 @@ function App() {
   )
 }
 
-export default App
+export default Home

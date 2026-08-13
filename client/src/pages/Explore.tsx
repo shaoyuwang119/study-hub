@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { NoteCard } from '@/components'
 import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
+import { usePageTitle } from '@/lib/usePageTitle'
 
 function Explore() {
   const [query, setQuery] = useState('')
@@ -14,6 +15,8 @@ function Explore() {
   const [searched, setSearched] = useState(false)
 
   const [error, setError] = useState<string | null>(null)
+
+  usePageTitle('Explore | StudyNote')
 
   // Load all notes on first visit so the page isn't empty
   useEffect(() => {
@@ -185,7 +188,7 @@ function Explore() {
             <div className="flex flex-wrap gap-4">
               {displayedNotes.map((note) => (
                 <Link key={note.id} to={`/notes/${note.id}`}>
-                  <NoteCard note={note} preview={note.content_url} />
+                  <NoteCard note={note} preview={note.preview_url ?? ''} />
                 </Link>
               ))}
             </div>

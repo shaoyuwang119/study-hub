@@ -4,12 +4,15 @@ import { Link } from 'react-router-dom'
 import { NoteCard, ErrorDisplay } from '@/components'
 import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
+import { usePageTitle } from '@/lib/usePageTitle'
 
 function Profile() {
   const [displayName, setDisplayName] = useState('')
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  usePageTitle('Profile | StudyNote')
 
   useEffect(() => {
     async function fetchProfile() {

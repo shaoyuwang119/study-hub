@@ -48,12 +48,26 @@ function Sidebar() {
           isMinimized ? 'w-16' : canMinimize ? 'w-64 shadow-lg' : 'w-64'
         } `}
       >
-        <div className="mb-8 flex flex-col gap-y-2">
+        <NavLink
+          key="logo"
+          to="/"
+          onMouseEnter={() => setIsHovered(true)}
+          className="mb-8 flex items-center gap-2 gap-y-2"
+        >
           <h1 className="text-3xl font-bold text-blue-800">
-            <FontAwesomeIcon icon={faBookBookmark}></FontAwesomeIcon>
-            {isMinimized ? '' : ' Study Hub'}
+            <FontAwesomeIcon
+              icon={faBookBookmark}
+              className="mr-1.5"
+            ></FontAwesomeIcon>
+            <span
+              className={`whitespace-nowrap transition-opacity duration-200 ${
+                isMinimized ? 'opacity-0' : 'opacity-100'
+              }`}
+            >
+              StudyNote
+            </span>
           </h1>
-        </div>
+        </NavLink>
 
         <nav onMouseEnter={() => setIsHovered(true)} className="space-y-1">
           {sidebarItems.map((item) => (

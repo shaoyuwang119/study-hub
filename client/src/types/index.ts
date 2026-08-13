@@ -6,7 +6,7 @@
   description: string
   author?: string
   content_url: string
-  preview_url: string | null
+  preview_url?: string
   saves: number
   created_at: string
   updated_at: string
