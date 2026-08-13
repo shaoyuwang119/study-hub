@@ -123,7 +123,11 @@ function Login() {
 
   return (
     <div className="flex h-screen flex-col items-center bg-zinc-50 p-30 font-sans">
-      <Header />
+      <h1 className="text-4xl font-bold">StudyNote</h1>
+
+      <p className="mt-4 text-zinc-700">
+        Your notes. Your classes. Your community.
+      </p>
 
       <br></br>
 
