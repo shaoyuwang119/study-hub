@@ -14,6 +14,7 @@ import {
   faCompress,
   faEllipsisVertical,
 } from '@fortawesome/free-solid-svg-icons'
+import { usePageTitle } from '@/lib/usePageTitle'
 
 type FetchState =
   | { status: 'loading' }
@@ -36,6 +37,12 @@ function NotePage() {
 
   const [showMenu, setShowMenu] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  usePageTitle(
+    state.status === 'ready'
+      ? `${state.note.title} | StudyNote`
+      : 'Loading... | StudyNote'
+  )
 
   async function handleDelete() {
     const confirmDelete = window.confirm(

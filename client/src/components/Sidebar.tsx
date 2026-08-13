@@ -88,7 +88,13 @@ function Sidebar() {
                 icon={item.icon}
                 className="w-4 shrink-0"
               />
-              {!isMinimized && <span>{item.label}</span>}
+              <span
+                className={`whitespace-nowrap transition-opacity duration-200 ${
+                  isMinimized ? 'opacity-0' : 'opacity-100'
+                }`}
+              >
+                {item.label}
+              </span>
             </NavLink>
           ))}
         </nav>
@@ -103,7 +109,13 @@ function Sidebar() {
             icon={faRightFromBracket}
             className="w-4 shrink-0"
           />
-          {!isMinimized && <span className="text-md">Log out</span>}
+          <span
+            className={`whitespace-nowrap transition-opacity duration-200 ${
+              isMinimized ? 'opacity-0' : 'opacity-100'
+            }`}
+          >
+            Log out
+          </span>
         </button>
       </aside>
     </div>

@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 
 import { faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { usePageTitle } from '@/lib/usePageTitle'
 
 type FloatingInputProps = {
   id: string
@@ -59,6 +60,8 @@ function Login() {
   const [loading, setLoading] = useState(true)
 
   const [message, setMessage] = useState('')
+
+  usePageTitle(isSignUp ? 'Sign Up | StudyNote' : 'Log In | StudyNote')
 
   useEffect(() => {
     async function checkSession() {

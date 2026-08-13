@@ -24,6 +24,7 @@ import {
   faArrowUp,
   faArrowDown,
 } from '@fortawesome/free-solid-svg-icons'
+import { usePageTitle } from '@/lib/usePageTitle'
 
 type FetchState =
   | { status: 'loading' }
@@ -146,6 +147,8 @@ function NoteEditPage() {
   const removeTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined
   )
+
+  usePageTitle(`Editing ${title} | StudyNote`)
 
   function showError(message: string) {
     setError(message)
