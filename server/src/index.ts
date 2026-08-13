@@ -13,7 +13,19 @@ import {
 } from './utils/uploadFile'
 import { getRequestScopedClient } from './utils/supabaseClient'
 import { renderFirstPageToPng } from './utils/generatePreview'
-import { get } from 'node:http'
+
+import cron from 'node-cron'
+import { cleanupOrphanedFiles } from '@/jobs/cleanupJob'
+
+// Runs daily at 3am
+cron.schedule('0 3 * * *', async () => {
+  try {
+    const count = await cleanupOrphanedFiles()
+    console.log(`[cleanup] removed ${count} orphaned file(s)`)
+  } catch (err) {
+    console.error('[cleanup] failed:', err)
+  }
+})
 
 const app = express()
 const PORT = process.env.PORT || 3000 // hosts like Render assign the port dynamically via this env var

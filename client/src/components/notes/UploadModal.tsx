@@ -73,12 +73,12 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
             e.preventDefault()
 
             if (!title || !subject) {
-              alert('Please fill in all required fields.')
+              setSubmitError('Please fill in all required fields.')
               return
             }
 
             if (files.length === 0) {
-              alert('Please select a file.')
+              setSubmitError('Please select a file.')
               return
             }
 
@@ -122,11 +122,7 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
             <input
               id="fileInput"
               type="file"
-              accept={
-                uploadType === 'pdf'
-                  ? '.pdf'
-                  : '.png,.jpg,.jpeg,.webp,.svg,.heic'
-              }
+              accept={uploadType === 'pdf' ? '.pdf' : '.png,.jpg,.jpeg'}
               multiple={uploadType === 'images'}
               onChange={(e) => {
                 const selected = Array.from(e.target.files ?? [])

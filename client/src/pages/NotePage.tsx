@@ -135,6 +135,13 @@ function NotePage() {
           undefined,
           { year: 'numeric', month: 'long', day: 'numeric' }
         )
+        const editedDate = note.updated_at
+          ? new Date(note.updated_at).toLocaleDateString(undefined, {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })
+          : null
 
         return (
           <div className="flex h-full w-full gap-2">
@@ -235,6 +242,11 @@ function NotePage() {
                     <p className="text-sm text-gray-600">
                       Date published: {publishedDate}
                     </p>
+                    {editedDate && (
+                      <p className="text-sm text-gray-600">
+                        Date edited: {editedDate}
+                      </p>
+                    )}
                     {fileSize !== null && (
                       <p className="text-sm text-gray-600">
                         File size: {formatSize(fileSize)}

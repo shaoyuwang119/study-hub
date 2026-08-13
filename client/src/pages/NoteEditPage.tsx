@@ -120,6 +120,7 @@ function NoteEditPage() {
   const [title, setTitle] = useState('')
   const [subject, setSubject] = useState('')
   const [description, setDescription] = useState('')
+  let oldTitle
 
   const [pages, setPages] = useState<PageEntry[]>([])
   const [saving, setSaving] = useState(false)
@@ -181,7 +182,7 @@ function NoteEditPage() {
         })
         return
       }
-
+      oldTitle = data.title
       setState({ status: 'ready', note: data })
       setTitle(data.title)
       setSubject(data.subject)
@@ -402,113 +403,118 @@ function NoteEditPage() {
   if (state.status === 'error') return <div>{state.message}</div>
 
   return (
-    <div className="flex h-full w-full gap-8 p-6">
-      <div className="flex h-full w-[50%] flex-col gap-3">
-        <div
-          ref={pageListRef}
-          className="w-full flex-1 flex-col gap-2 space-y-2 overflow-y-auto rounded-2xl border border-gray-200 bg-zinc-50 p-3"
-        >
-          <DragDropProvider onDragEnd={handleDragEnd}>
-            {pages.map((entry, displayPosition) => (
-              <SortablePage
-                key={entry.id}
-                entry={entry}
-                displayPosition={displayPosition}
-                onDelete={handleDeletePage}
-              />
-            ))}
-          </DragDropProvider>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <label
-            className={`cursor-pointer rounded-md border border-gray-300 px-3 py-1.5 text-xs ${loadingFiles ? 'pointer-events-none opacity-50' : ''}`}
-          >
-            Add page(s)
-            <input
-              type="file"
-              accept="application/pdf,image/png,image/jpeg"
-              multiple
-              className="hidden"
-              disabled={loadingFiles}
-              onChange={(e) => handleAddFiles(e.target.files)}
-            />
-          </label>
-          <label
-            className={`cursor-pointer rounded-md border border-gray-300 px-3 py-1.5 text-xs ${loadingFiles ? 'pointer-events-none opacity-50' : ''}`}
-          >
-            Replace PDF
-            <input
-              type="file"
-              accept="application/pdf"
-              className="hidden"
-              disabled={loadingFiles}
-              onChange={(e) => handleReplacePdf(e.target.files)}
-            />
-          </label>
-
-          {loadingFiles ? (
-            <span className="flex flex-1 items-center gap-1.5 text-xs text-gray-500">
-              <FontAwesomeIcon icon={faSpinner} spinPulse />
-              {fileProgress
-                ? `Processing file ${fileProgress.current} of ${fileProgress.total}`
-                : pageProgress
-                  ? `Loading page ${pageProgress.current} of ${pageProgress.total}`
-                  : 'Processing files…'}
-            </span>
-          ) : error ? (
-            <span
-              className={`flex-1 text-xs text-red-600 transition-opacity duration-500 ${errorVisible ? 'opacity-100' : 'opacity-0'}`}
-            >
-              <FontAwesomeIcon icon={faCircleExclamation} className="mr-1" />
-              {error}
-            </span>
-          ) : null}
-        </div>
+    <div className="flex h-full w-full flex-col gap-8 p-6">
+      <div className="shrink-0">
+        <h1 className="text-2xl font-bold">Editing {title}</h1>
       </div>
+      <div className="flex h-full flex-1">
+        <div className="flex w-[50%] flex-col gap-3">
+          <div
+            ref={pageListRef}
+            className="w-full flex-1 flex-col gap-2 space-y-2 overflow-y-auto rounded-2xl border border-gray-200 bg-zinc-50 p-3"
+          >
+            <DragDropProvider onDragEnd={handleDragEnd}>
+              {pages.map((entry, displayPosition) => (
+                <SortablePage
+                  key={entry.id}
+                  entry={entry}
+                  displayPosition={displayPosition}
+                  onDelete={handleDeletePage}
+                />
+              ))}
+            </DragDropProvider>
+          </div>
 
-      <div className="flex flex-1 flex-col gap-3">
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="rounded-lg border border-gray-200 p-2 text-2xl font-bold focus:border-gray-300 focus:outline-none"
-        />
+          <div className="flex items-center gap-2">
+            <label
+              className={`cursor-pointer rounded-md border border-gray-300 px-3 py-1.5 text-xs ${loadingFiles ? 'pointer-events-none opacity-50' : ''}`}
+            >
+              Add page(s)
+              <input
+                type="file"
+                accept="application/pdf,image/png,image/jpeg"
+                multiple
+                className="hidden"
+                disabled={loadingFiles}
+                onChange={(e) => handleAddFiles(e.target.files)}
+              />
+            </label>
+            <label
+              className={`cursor-pointer rounded-md border border-gray-300 px-3 py-1.5 text-xs ${loadingFiles ? 'pointer-events-none opacity-50' : ''}`}
+            >
+              Replace PDF
+              <input
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                disabled={loadingFiles}
+                onChange={(e) => handleReplacePdf(e.target.files)}
+              />
+            </label>
 
-        <select
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          className={`rounded-lg border border-gray-300 px-2 py-2 focus:border-gray-300 focus:outline-none ${subject === '' ? 'text-zinc-400' : 'text-zinc-800'}`}
-        >
-          <option value="" disabled>
-            Subject (required)
-          </option>
-          {SUBJECTS.map((s) => (
-            <option key={s} value={s} className="text-zinc-700">
-              {s}
+            {loadingFiles ? (
+              <span className="flex flex-1 items-center gap-1.5 text-xs text-gray-500">
+                <FontAwesomeIcon icon={faSpinner} spin />
+                {fileProgress
+                  ? `Processing file ${fileProgress.current} of ${fileProgress.total}`
+                  : pageProgress
+                    ? `Loading page ${pageProgress.current} of ${pageProgress.total}`
+                    : 'Processing files…'}
+              </span>
+            ) : error ? (
+              <span
+                className={`flex-1 text-xs text-red-600 transition-opacity duration-500 ${errorVisible ? 'opacity-100' : 'opacity-0'}`}
+              >
+                <FontAwesomeIcon icon={faCircleExclamation} className="mr-1" />
+                {error}
+              </span>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="flex flex-1 flex-col gap-3">
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="rounded-lg border border-gray-200 p-2 text-2xl font-bold focus:border-gray-300 focus:outline-none"
+          />
+
+          <select
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            className={`rounded-lg border border-gray-300 px-2 py-2 focus:border-gray-300 focus:outline-none ${subject === '' ? 'text-zinc-400' : 'text-zinc-800'}`}
+          >
+            <option value="" disabled>
+              Subject (required)
             </option>
-          ))}
-        </select>
+            {SUBJECTS.map((s) => (
+              <option key={s} value={s} className="text-zinc-700">
+                {s}
+              </option>
+            ))}
+          </select>
 
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="flex-1 resize-none rounded-lg border border-gray-200 p-2 focus:border-gray-300 focus:outline-none"
-        />
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="flex-1 resize-none rounded-lg border border-gray-200 p-2 focus:border-gray-300 focus:outline-none"
+          />
 
-        <div className="flex gap-3">
-          <button
-            onClick={() => navigate(`/notes/${id}`)}
-            className="cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || loadingFiles}
-            className="cursor-pointer rounded-md bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
-          >
-            {saving ? 'Saving...' : 'Save'}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate(`/notes/${id}`)}
+              className="cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || loadingFiles}
+              className="cursor-pointer rounded-md bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
