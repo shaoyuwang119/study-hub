@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
 import { formatSize } from '@/lib/formatFileSize'
 
-import { Sidebar, ErrorDisplay } from '@/components'
+import { Sidebar, ErrorDisplay, Loading } from '@/components'
 import type { User } from '@supabase/supabase-js'
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -44,7 +44,20 @@ function NotePage() {
 
     if (!confirmDelete) return
 
-    const { data } = await supabase.from('notes').delete().eq('id', id)
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+    if (!session) return
+
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/notes/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+
+    if (!res.ok) {
+      alert('Failed to delete note.')
+      return
+    }
 
     navigate('/')
   }
@@ -122,7 +135,7 @@ function NotePage() {
   function renderContent() {
     switch (state.status) {
       case 'loading':
-        return <div>Loading...</div>
+        return <Loading />
       case 'error':
         return (
           <div>
@@ -276,7 +289,7 @@ function NotePage() {
     }
   }
 
-  return <div className="flex-1 bg-zinc-50">{renderContent()}</div>
+  return <div className="flex flex-1 bg-zinc-50">{renderContent()}</div>
 }
 
 export default NotePage

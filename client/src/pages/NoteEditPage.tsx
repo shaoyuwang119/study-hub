@@ -1,11 +1,12 @@
 ﻿import { useEffect, useRef, useState, type ComponentProps } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useBlocker, useNavigate, useParams } from 'react-router-dom'
 import * as pdfjsLib from 'pdfjs-dist'
 
 import { DragDropProvider } from '@dnd-kit/react'
 import { isSortable, useSortable } from '@dnd-kit/react/sortable'
 
 import { supabase } from '@/lib/supabase'
+import { ErrorDisplay, Loading } from '@/components'
 import '@/lib/pdf'
 import { useSubjects } from '@/lib/subjects'
 
@@ -17,6 +18,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faSpinner,
   faCircleExclamation,
+  faFileLines,
+  faPlus,
+  faTrashCan,
+  faArrowUp,
+  faArrowDown,
 } from '@fortawesome/free-solid-svg-icons'
 
 type FetchState =
@@ -32,18 +38,6 @@ type PageEntry = { id: string; thumbnail: string } & PageSource
 
 const MAX_PDF_SIZE = 50 * 1024 * 1024
 
-function getStagedNewFileSize(pages: PageEntry[]): number {
-  const seen = new Set<File>()
-  let total = 0
-  for (const entry of pages) {
-    if (entry.source === 'new' && !seen.has(entry.file)) {
-      seen.add(entry.file)
-      total += entry.file.size
-    }
-  }
-  return total
-}
-
 function attachId<T extends object>(entry: T): T & { id: string } {
   return { ...entry, id: crypto.randomUUID() }
 }
@@ -52,12 +46,13 @@ async function renderPdfThumbnails(
   source: { url: string } | { data: ArrayBuffer },
   onProgress?: (current: number, total: number) => void
 ): Promise<string[]> {
+  const startTime = performance.now()
   const pdf = await pdfjsLib.getDocument(source).promise
   const thumbnails: string[] = []
 
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i)
-    const viewport = page.getViewport({ scale: 0.2 })
+    const viewport = page.getViewport({ scale: 0.35 })
     const canvas = document.createElement('canvas')
     canvas.width = viewport.width
     canvas.height = viewport.height
@@ -66,6 +61,10 @@ async function renderPdfThumbnails(
     thumbnails.push(canvas.toDataURL())
     onProgress?.(i, pdf.numPages)
   }
+
+  console.log(
+    `Rendered ${pdf.numPages} page(s) in ${(performance.now() - startTime).toFixed(2)}ms`
+  )
 
   return thumbnails
 }
@@ -120,15 +119,15 @@ function NoteEditPage() {
   const [title, setTitle] = useState('')
   const [subject, setSubject] = useState('')
   const [description, setDescription] = useState('')
-  let oldTitle
 
   const [pages, setPages] = useState<PageEntry[]>([])
   const [saving, setSaving] = useState(false)
   const [loadingFiles, setLoadingFiles] = useState(false)
-  const [baselineSize, setBaselineSize] = useState(0)
 
   const pageListRef = useRef<HTMLDivElement>(null)
+  const [pageListScrolled, setPageListScrolled] = useState(false)
   const prevPageCountRef = useRef<number>(0)
+  const originalPageCountRef = useRef<number | null>(null)
 
   const [pageProgress, setPageProgress] = useState<{
     current: number
@@ -159,14 +158,15 @@ function NoteEditPage() {
     removeTimeoutRef.current = setTimeout(() => setError(null), 6500)
   }
 
+  // Scroll to bottom when new pages are added
   useEffect(() => {
     if (pages.length > prevPageCountRef.current) {
-      const el = pageListRef.current
-      el?.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+      scrollToBottom()
     }
     prevPageCountRef.current = pages.length
   }, [pages])
 
+  // Fetch note data on mount
   useEffect(() => {
     async function fetchNote() {
       const { data, error } = await supabase
@@ -182,7 +182,6 @@ function NoteEditPage() {
         })
         return
       }
-      oldTitle = data.title
       setState({ status: 'ready', note: data })
       setTitle(data.title)
       setSubject(data.subject)
@@ -192,6 +191,7 @@ function NoteEditPage() {
     fetchNote()
   }, [id])
 
+  // Render thumbnails for existing pages
   useEffect(() => {
     if (state.status !== 'ready') return
 
@@ -205,6 +205,7 @@ function NoteEditPage() {
             attachId({ thumbnail, source: 'existing', index })
           )
         )
+        originalPageCountRef.current = thumbnails.length
       })
       .finally(() => {
         setLoadingFiles(false)
@@ -212,12 +213,55 @@ function NoteEditPage() {
       })
   }, [state])
 
-  useEffect(() => {
-    if (state.status !== 'ready') return
-    fetch(state.note.content_url, { method: 'HEAD' }).then((r) =>
-      setBaselineSize(Number(r.headers.get('content-length')) || 0)
+  const justSavedRef = useRef(false)
+
+  function metadataChanged() {
+    if (state.status !== 'ready') return false
+    return (
+      title !== state.note.title ||
+      subject !== state.note.subject ||
+      description !== state.note.description
     )
-  }, [state])
+  }
+
+  function pagesChanged() {
+    if (originalPageCountRef.current === null) return false
+    if (pages.length !== originalPageCountRef.current) return true
+    return pages.some((p, i) => p.source !== 'existing' || p.index !== i)
+  }
+
+  function isDirty() {
+    if (justSavedRef.current) return false
+    return metadataChanged() || pagesChanged()
+  }
+
+  // Warn before closing the tab, refreshing, or typing a new URL
+  useEffect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      if (!isDirty()) return
+      e.preventDefault()
+      e.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [state, title, subject, description, pages])
+
+  // Warn before navigating to a different page within the app
+  // (Sidebar links, the Cancel button, browser back/forward)
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isDirty() && currentLocation.pathname !== nextLocation.pathname
+  )
+
+  useEffect(() => {
+    if (blocker.state !== 'blocked') return
+    if (window.confirm('Changes you made may not be saved.')) {
+      blocker.proceed()
+    } else {
+      blocker.reset()
+    }
+  }, [blocker])
 
   async function extractPageEntries(
     file: File,
@@ -254,16 +298,6 @@ function NoteEditPage() {
       return
     }
 
-    const newFilesSize = files.reduce((sum, f) => sum + f.size, 0)
-    const projectedSize =
-      baselineSize + getStagedNewFileSize(pages) + newFilesSize
-    if (projectedSize > MAX_PDF_SIZE) {
-      showError(
-        `Failure: This would bring the PDF to roughly ${formatSize(projectedSize)}, over the ${formatSize(MAX_PDF_SIZE)} limit.`
-      )
-      return
-    }
-
     setLoadingFiles(true)
     try {
       const newEntries: PageEntry[] = []
@@ -287,29 +321,23 @@ function NoteEditPage() {
     setPages((prev) => prev.filter((p) => p.id !== id))
   }
 
-  async function handleReplacePdf(fileList: FileList | null) {
-    const file = fileList?.[0]
-    if (!file) return
-    if (
-      !confirm(
-        'This discards every page currently listed and replaces them with the new file. Continue?'
-      )
-    )
-      return
+  function handleClearAll() {
+    if (!pages.length) return
+    if (!confirm('Remove all pages from this note?')) return
+    setPages([])
+  }
 
-    setError(null)
-    setLoadingFiles(true)
-    try {
-      const entries = await extractPageEntries(file, (current, total) =>
-        setPageProgress({ current, total })
-      )
-      setPages(entries)
-    } catch {
-      showError("Could not read this file — make sure it's a valid PDF.")
-    } finally {
-      setLoadingFiles(false)
-      setPageProgress(null)
-    }
+  function scrollToTop() {
+    pageListRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function scrollToBottom() {
+    const el = pageListRef.current
+    el?.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+  }
+
+  function handlePageListScroll(e: React.UIEvent<HTMLDivElement>) {
+    setPageListScrolled(e.currentTarget.scrollTop > 0)
   }
 
   const handleDragEnd: NonNullable<
@@ -336,13 +364,45 @@ function NoteEditPage() {
     if (state.status !== 'ready' || loadingFiles || saving) return
     const { note } = state
     setSaving(true)
+    setLoadingFiles(true)
 
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession()
       if (!session) {
-        alert('Not authenticated!')
+        showError('Not authenticated!')
+        return
+      }
+
+      // Pages/files are untouched - skip rebuilding the PDF entirely and
+      // just update the note's metadata
+      if (!pagesChanged()) {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/notes/${note.id}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ title, subject, description }),
+          }
+        )
+
+        if (!res.ok) {
+          const body = await res.json().catch(() => null)
+          showError(body?.error ?? 'Failed to update note.')
+          return
+        }
+
+        justSavedRef.current = true
+        navigate(`/notes/${note.id}`)
+        return
+      }
+
+      if (pages.length === 0) {
+        showError('Note has no pages.')
         return
       }
 
@@ -383,106 +443,161 @@ function NoteEditPage() {
         }
       )
 
-      console.log(res)
-
       if (!res.ok) {
         const body = await res.json().catch(() => null)
-        alert(body?.error ?? 'Failed to update PDF pages.')
+        showError(body?.error ?? 'Failed to update PDF pages.')
         return
       }
 
+      justSavedRef.current = true
       navigate(`/notes/${note.id}`)
     } finally {
       const endTime = performance.now()
       console.log(`Save operation took ${(endTime - startTime).toFixed(2)}ms`)
+      setLoadingFiles(false)
       setSaving(false)
     }
   }
 
-  if (state.status === 'loading') return <div>Loading...</div>
-  if (state.status === 'error') return <div>{state.message}</div>
+  if (state.status === 'loading') return <Loading />
+  if (state.status === 'error')
+    return (
+      <div className="flex-1 bg-zinc-50 p-6">
+        <ErrorDisplay message={state.message} />
+      </div>
+    )
 
   return (
-    <div className="flex h-full w-full flex-col gap-8 p-6">
-      <div className="shrink-0">
-        <h1 className="text-2xl font-bold">Editing {title}</h1>
+    <div className="flex flex-1 flex-col gap-6 bg-zinc-50 p-6">
+      <div className="flex items-baseline gap-2 font-bold text-zinc-900">
+        <span className="text-3xl font-medium text-zinc-800">Edit / </span>
+        <span className="text-2xl font-medium text-zinc-600">
+          {state.note.title}
+        </span>
       </div>
-      <div className="flex h-full flex-1">
-        <div className="flex w-[50%] flex-col gap-3">
-          <div
-            ref={pageListRef}
-            className="w-full flex-1 flex-col gap-2 space-y-2 overflow-y-auto rounded-2xl border border-gray-200 bg-zinc-50 p-3"
-          >
-            <DragDropProvider onDragEnd={handleDragEnd}>
-              {pages.map((entry, displayPosition) => (
-                <SortablePage
-                  key={entry.id}
-                  entry={entry}
-                  displayPosition={displayPosition}
-                  onDelete={handleDeletePage}
+
+      <div className="flex flex-1 gap-6 overflow-hidden">
+        {/* Left column - page list */}
+        <div className="flex w-1/2 flex-col gap-2">
+          <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border-2 border-gray-200 bg-zinc-100">
+            <div
+              className={`z-10 flex shrink-0 items-center justify-between border-b-2 border-gray-200 bg-white px-4 py-3 transition-shadow ${
+                pageListScrolled ? 'shadow-md' : ''
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <FontAwesomeIcon
+                  icon={faFileLines}
+                  className="text-lg font-medium text-zinc-600"
                 />
-              ))}
-            </DragDropProvider>
-          </div>
+                <span className="font-semibold text-zinc-800">Pages</span>
+              </div>
 
-          <div className="flex items-center gap-2">
-            <label
-              className={`cursor-pointer rounded-md border border-gray-300 px-3 py-1.5 text-xs ${loadingFiles ? 'pointer-events-none opacity-50' : ''}`}
-            >
-              Add page(s)
-              <input
-                type="file"
-                accept="application/pdf,image/png,image/jpeg"
-                multiple
-                className="hidden"
-                disabled={loadingFiles}
-                onChange={(e) => handleAddFiles(e.target.files)}
-              />
-            </label>
-            <label
-              className={`cursor-pointer rounded-md border border-gray-300 px-3 py-1.5 text-xs ${loadingFiles ? 'pointer-events-none opacity-50' : ''}`}
-            >
-              Replace PDF
-              <input
-                type="file"
-                accept="application/pdf"
-                className="hidden"
-                disabled={loadingFiles}
-                onChange={(e) => handleReplacePdf(e.target.files)}
-              />
-            </label>
+              {(loadingFiles || error) && (
+                <div className="flex items-center px-1">
+                  {loadingFiles ? (
+                    <span className="flex items-center gap-1.5 text-xs text-gray-500">
+                      <FontAwesomeIcon icon={faSpinner} spin />
+                      {fileProgress
+                        ? `Processing file ${fileProgress.current} of ${fileProgress.total}`
+                        : pageProgress
+                          ? `Loading page ${pageProgress.current} of ${pageProgress.total}`
+                          : 'Processing files…'}
+                    </span>
+                  ) : error ? (
+                    <span
+                      className={`text-xs text-red-600 transition-opacity duration-500 ${errorVisible ? 'opacity-100' : 'opacity-0'}`}
+                    >
+                      <FontAwesomeIcon
+                        icon={faCircleExclamation}
+                        className="mr-1"
+                      />
+                      {error}
+                    </span>
+                  ) : null}
+                </div>
+              )}
 
-            {loadingFiles ? (
-              <span className="flex flex-1 items-center gap-1.5 text-xs text-gray-500">
-                <FontAwesomeIcon icon={faSpinner} spin />
-                {fileProgress
-                  ? `Processing file ${fileProgress.current} of ${fileProgress.total}`
-                  : pageProgress
-                    ? `Loading page ${pageProgress.current} of ${pageProgress.total}`
-                    : 'Processing files…'}
-              </span>
-            ) : error ? (
-              <span
-                className={`flex-1 text-xs text-red-600 transition-opacity duration-500 ${errorVisible ? 'opacity-100' : 'opacity-0'}`}
-              >
-                <FontAwesomeIcon icon={faCircleExclamation} className="mr-1" />
-                {error}
-              </span>
-            ) : null}
+              <div className="flex items-center gap-2 text-zinc-500">
+                <label
+                  title="Add files"
+                  className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-gray-300 text-blue-600 hover:bg-gray-50 ${loadingFiles ? 'pointer-events-none opacity-50' : ''}`}
+                >
+                  <FontAwesomeIcon icon={faPlus} />
+                  <input
+                    type="file"
+                    accept="application/pdf,image/png,image/jpeg"
+                    multiple
+                    className="hidden"
+                    disabled={loadingFiles}
+                    onChange={(e) => handleAddFiles(e.target.files)}
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  title="Remove all files"
+                  onClick={handleClearAll}
+                  disabled={loadingFiles || !pages.length}
+                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-gray-300 px-2 text-xs text-red-500 hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
+                >
+                  <FontAwesomeIcon icon={faTrashCan} size="lg" />
+                </button>
+
+                <div className="mx-1 h-7 w-px bg-gray-200" />
+
+                <button
+                  type="button"
+                  title="Scroll to top"
+                  onClick={scrollToTop}
+                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-gray-300 hover:bg-gray-50"
+                >
+                  <FontAwesomeIcon icon={faArrowUp} />
+                </button>
+                <button
+                  type="button"
+                  title="Scroll to bottom"
+                  onClick={scrollToBottom}
+                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-gray-300 hover:bg-gray-50"
+                >
+                  <FontAwesomeIcon icon={faArrowDown} />
+                </button>
+              </div>
+            </div>
+
+            <div
+              ref={pageListRef}
+              onScroll={handlePageListScroll}
+              className="flex-1 scrollbar-thin [scrollbar-color:var(--color-zinc-300)_transparent] space-y-2 overflow-y-auto p-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent"
+            >
+              <DragDropProvider onDragEnd={handleDragEnd}>
+                {pages.map((entry, displayPosition) => (
+                  <SortablePage
+                    key={entry.id}
+                    entry={entry}
+                    displayPosition={displayPosition}
+                    onDelete={handleDeletePage}
+                  />
+                ))}
+              </DragDropProvider>
+            </div>
           </div>
         </div>
 
+        {/* Right column - note metadata */}
         <div className="flex flex-1 flex-col gap-3">
+          <div className="-mb-1 text-lg text-zinc-600">Title</div>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="rounded-lg border border-gray-200 p-2 text-2xl font-bold focus:border-gray-300 focus:outline-none"
+            className="-mt-1 rounded-lg border border-gray-300 bg-white p-2 text-2xl font-medium text-zinc-800 focus:outline-gray-300"
           />
 
+          <div className="-mb-1 text-lg text-zinc-600">Subject</div>
           <select
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            className={`rounded-lg border border-gray-300 px-2 py-2 focus:border-gray-300 focus:outline-none ${subject === '' ? 'text-zinc-400' : 'text-zinc-800'}`}
+            className={`rounded-lg border border-gray-300 bg-white px-2 py-2 focus:border-gray-300 focus:outline-none ${subject === '' ? 'text-zinc-400' : 'text-zinc-800'}`}
           >
             <option value="" disabled>
               Subject (required)
@@ -494,16 +609,17 @@ function NoteEditPage() {
             ))}
           </select>
 
+          <div className="-mb-1 text-lg text-zinc-600">Description</div>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="flex-1 resize-none rounded-lg border border-gray-200 p-2 focus:border-gray-300 focus:outline-none"
+            className="flex-1 resize-none rounded-lg border border-gray-300 bg-white p-2 text-gray-800 focus:outline-gray-300"
           />
 
           <div className="flex gap-3">
             <button
               onClick={() => navigate(`/notes/${id}`)}
-              className="cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm"
+              className="cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50"
             >
               Cancel
             </button>

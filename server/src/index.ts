@@ -11,21 +11,13 @@ import {
   uploadPdfToSupabase,
   uploadPreviewToSupabase,
 } from './utils/uploadFile'
-import { getRequestScopedClient } from './utils/supabaseClient'
-import { renderFirstPageToPng } from './utils/generatePreview'
+import { getRequestScopedClient } from '@/utils/supabaseClient'
+import { renderFirstPageToPng } from '@/utils/generatePreview'
 
-import cron from 'node-cron'
-import { cleanupOrphanedFiles } from '@/jobs/cleanupJob'
+import { scheduleCleanupJob } from '@/jobs/cleanupJob'
+import { deleteNoteFiles } from '@/utils/deleteNoteFiles'
 
-// Runs daily at 3am
-cron.schedule('0 3 * * *', async () => {
-  try {
-    const count = await cleanupOrphanedFiles()
-    console.log(`[cleanup] removed ${count} orphaned file(s)`)
-  } catch (err) {
-    console.error('[cleanup] failed:', err)
-  }
-})
+scheduleCleanupJob()
 
 const app = express()
 const PORT = process.env.PORT || 3000 // hosts like Render assign the port dynamically via this env var
@@ -226,10 +218,10 @@ app.post(
     try {
       spec = JSON.parse(req.body.pages)
     } catch {
-      return res.status(400).json({ error: 'pages must be valid JSON' })
+      return res.status(400).json({ error: 'Pages must be valid JSON' })
     }
     if (!Array.isArray(spec) || spec.length === 0) {
-      return res.status(400).json({ error: 'pages must be a non-empty array' })
+      return res.status(400).json({ error: 'Pages must be a non-empty array' })
     }
 
     // console.log('Page spec:', spec)
@@ -393,6 +385,10 @@ app.post(
 
     res.sendStatus(201)
 
+    deleteNoteFiles(note.content_url, null).catch((err) =>
+      console.error('Failed to delete old content file:', err)
+    )
+
     // Generate and attach the preview after responding, so the client
     // doesn't wait on it
     try {
@@ -407,11 +403,78 @@ app.post(
         .from('notes')
         .update({ preview_url })
         .eq('id', note.id)
+
+      // Old preview is unreferenced now
+      deleteNoteFiles(null, note.preview_url).catch((err) =>
+        console.error('Failed to delete old preview:', err)
+      )
     } catch (err) {
       console.error('Failed to generate note preview:', err)
     }
   }
 )
+
+// Update only a note's metadata (title/subject/description) - used when the
+// client detects the pages/files weren't touched, so this skips downloading
+// the original PDF, rebuilding it, re-uploading it, and regenerating the
+// preview entirely.
+app.patch('/api/notes/:id', requireAuth, async (req: AuthedRequest, res) => {
+  const { id } = req.params
+  const { title, subject, description } = req.body
+
+  if (!title || !subject) {
+    return res.status(400).json({ error: 'Fields missing' })
+  }
+
+  const supabaseClient = getRequestScopedClient(req)
+
+  const { error } = await supabaseClient
+    .from('notes')
+    .update({
+      title,
+      subject,
+      description,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+
+  if (error) {
+    return res.status(500).json({ error: 'Failed to update note' })
+  }
+
+  res.sendStatus(204)
+})
+
+// Delete a note
+app.delete('/api/notes/:id', requireAuth, async (req: AuthedRequest, res) => {
+  const { id } = req.params
+  const supabaseClient = getRequestScopedClient(req)
+
+  const { data: note, error: fetchError } = await supabaseClient
+    .from('notes')
+    .select('content_url, preview_url')
+    .eq('id', id)
+    .single()
+
+  if (fetchError || !note) {
+    return res.status(404).json({ error: 'Note not found' })
+  }
+
+  const { error: deleteError } = await supabaseClient
+    .from('notes')
+    .delete()
+    .eq('id', id)
+
+  if (deleteError) {
+    return res.status(500).json({ error: 'Failed to delete note' })
+  }
+
+  res.sendStatus(204)
+
+  deleteNoteFiles(note.content_url, note.preview_url).catch((err) =>
+    console.error('Failed to delete note files:', err)
+  )
+})
 
 // Express recognizes this as an error handler specifically because it
 // takes 4 arguments (err, req, res, next) - any error thrown in an async

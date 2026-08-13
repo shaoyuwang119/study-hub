@@ -1,4 +1,4 @@
-﻿import { Route, Routes } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { ProtectedRoute } from '@/components'
 
 import Explore from '@/pages/Explore'
@@ -10,24 +10,27 @@ import NotFound from '@/pages/NotFound'
 import Library from '@/pages/Library'
 import NoteEditPage from '@/pages/NoteEditPage'
 
-function App() {
-  return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/login" element={<Login />} />
+const router = createBrowserRouter([
+  // Public routes
+  { path: '/login', element: <Login /> },
 
-      {/* Protected routes */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/explore" element={<Explore />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/library" element={<Library />} />
-        <Route path="/notes/:id/edit" element={<NoteEditPage />} />
-        <Route path="/notes/:id" element={<NotePage />} />
-        <Route path="*" element={<NotFound />} />
-      </Route>
-    </Routes>
-  )
+  // Protected routes
+  {
+    element: <ProtectedRoute />,
+    children: [
+      { path: '/', element: <Home /> },
+      { path: '/explore', element: <Explore /> },
+      { path: '/profile', element: <Profile /> },
+      { path: '/library', element: <Library /> },
+      { path: '/notes/:id/edit', element: <NoteEditPage /> },
+      { path: '/notes/:id', element: <NotePage /> },
+      { path: '*', element: <NotFound /> },
+    ],
+  },
+])
+
+function App() {
+  return <RouterProvider router={router} />
 }
 
 export default App
