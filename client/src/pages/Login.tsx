@@ -37,11 +37,11 @@ function FloatingInput({
         onChange={(e) => onChange(e.target.value)}
         required
         minLength={minLength}
-        className="peer block w-full rounded-lg border border-gray-300 bg-white px-3 pt-4 pb-1.5 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none"
+        className="peer block w-full rounded-lg border border-slate-300 bg-white px-3 pt-4 pb-1.5 text-sm text-slate-900 focus:border-sea-teal focus:outline-none"
       />
       <label
         htmlFor={id}
-        className="absolute inset-s-3 top-2 z-10 origin-left -translate-y-4 scale-75 bg-white px-1 text-sm text-gray-500 duration-150 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:scale-100 peer-focus:top-2! peer-focus:-translate-y-4! peer-focus:scale-75! peer-focus:text-blue-500"
+        className="absolute inset-s-3 top-2 z-10 origin-left -translate-y-4 scale-75 bg-white px-1 text-sm text-slate-500 duration-150 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:scale-100 peer-focus:top-2! peer-focus:-translate-y-4! peer-focus:scale-75! peer-focus:text-sea-teal"
       >
         {label}
       </label>
@@ -122,24 +122,24 @@ function Login() {
   }
 
   return (
-    <div className="flex h-screen flex-col items-center bg-zinc-50 p-6 font-sans">
-      <h1 className="mt-26 text-4xl font-bold">StudyNote</h1>
+    <div className="flex h-screen flex-col items-center bg-slate-50 p-6 font-sans">
+      <h1 className="mt-26 font-serif text-4xl font-bold">StudyNote</h1>
 
-      <p className="mt-4 text-zinc-700">
+      <p className="mt-4 text-slate-700">
         Your notes. Your classes. Your community.
       </p>
 
       <br></br>
 
-      <div className="mb-15 w-full max-w-sm rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
-        <div className="mb-6 flex rounded-lg bg-zinc-100 p-1 text-sm font-medium">
+      <div className="mb-15 w-full max-w-sm rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="mb-6 flex rounded-lg bg-slate-100 p-1 text-sm font-medium">
           <button
             type="button"
             onClick={() => switchMode(false)}
             className={`flex-1 cursor-pointer rounded-md py-2 transition ${
               !isSignUp
-                ? 'bg-white text-zinc-900 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-700'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             Log In
@@ -149,8 +149,8 @@ function Login() {
             onClick={() => switchMode(true)}
             className={`flex-1 cursor-pointer rounded-md py-2 transition ${
               isSignUp
-                ? 'bg-white text-zinc-900 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-700'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             Sign Up
@@ -206,7 +206,7 @@ function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="transition-shadows mt-1 flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-blue-500 px-4 py-2 text-white duration-200 hover:bg-blue-600 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+            className="transition-shadows mt-1 flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-sea-teal px-4 py-2 text-white duration-200 hover:bg-sea-teal-dark hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? (
               <FontAwesomeIcon icon={faSpinner} spin />

@@ -7,8 +7,8 @@ import { isSortable, useSortable } from '@dnd-kit/react/sortable'
 
 import { supabase } from '@/lib/supabase'
 import { ErrorDisplay, Loading } from '@/components'
+import SubjectCombobox from '@/components/common/SubjectCombobox'
 import '@/lib/pdf'
-import { useSubjects } from '@/lib/subjects'
 
 import type { Note } from '@/types'
 
@@ -87,15 +87,15 @@ function SortablePage({
   return (
     <div
       ref={ref}
-      className={`flex h-36 cursor-grab items-center gap-3 rounded-lg border border-gray-200 bg-white p-2 transition-shadow select-none active:cursor-grabbing ${isDragging ? 'z-20 shadow-xl' : ''}`}
+      className={`flex h-36 cursor-grab items-center gap-3 rounded-lg border border-slate-200 bg-white p-2 transition-shadow select-none active:cursor-grabbing ${isDragging ? 'z-20 shadow-xl' : ''}`}
     >
-      <span className="w-5 text-center text-xs text-gray-400">
+      <span className="w-5 text-center text-xs text-slate-400">
         {displayPosition + 1}
       </span>
       <img
         src={entry.thumbnail}
         alt={`Page ${displayPosition + 1}`}
-        className="max-h-32 max-w-25 border border-gray-200"
+        className="max-h-32 max-w-25 border border-slate-200"
       />
       <button
         type="button"
@@ -103,7 +103,7 @@ function SortablePage({
           e.stopPropagation()
           onDelete(entry.id)
         }}
-        className="ml-auto cursor-pointer rounded-full px-2 py-1 text-xs text-gray-400 hover:bg-red-50 hover:text-red-500"
+        className="ml-auto cursor-pointer rounded-full px-2 py-1 text-xs text-slate-400 hover:bg-red-50 hover:text-red-500"
       >
         ✕
       </button>
@@ -114,11 +114,10 @@ function SortablePage({
 function NoteEditPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const SUBJECTS = useSubjects()
 
   const [state, setState] = useState<FetchState>({ status: 'loading' })
   const [title, setTitle] = useState('')
-  const [subject, setSubject] = useState('')
+  const [subjectId, setSubjectId] = useState<number | null>(null)
   const [description, setDescription] = useState('')
 
   const [pages, setPages] = useState<PageEntry[]>([])
@@ -174,7 +173,7 @@ function NoteEditPage() {
     async function fetchNote() {
       const { data, error } = await supabase
         .from('notes')
-        .select('*')
+        .select('*, subject:subjects(id, name, category)')
         .eq('id', id)
         .maybeSingle()
 
@@ -188,7 +187,7 @@ function NoteEditPage() {
       }
       setState({ status: 'ready', note: data })
       setTitle(data.title)
-      setSubject(data.subject)
+      setSubjectId(data.subject_id)
       setDescription(data.description)
     }
 
@@ -223,7 +222,7 @@ function NoteEditPage() {
     if (state.status !== 'ready') return false
     return (
       title !== state.note.title ||
-      subject !== state.note.subject ||
+      subjectId !== state.note.subject_id ||
       description !== state.note.description
     )
   }
@@ -249,7 +248,7 @@ function NoteEditPage() {
 
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [state, title, subject, description, pages])
+  }, [state, title, subjectId, description, pages])
 
   // Warn before navigating to a different page within the app
   // (Sidebar links, the Cancel button, browser back/forward)
@@ -390,7 +389,7 @@ function NoteEditPage() {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${session.access_token}`,
             },
-            body: JSON.stringify({ title, subject, description }),
+            body: JSON.stringify({ title, subject_id: subjectId, description }),
           }
         )
 
@@ -431,7 +430,7 @@ function NoteEditPage() {
         'newNoteData',
         JSON.stringify({
           title,
-          subject,
+          subject_id: subjectId,
           description,
         })
       )
@@ -472,10 +471,10 @@ function NoteEditPage() {
     )
 
   return (
-    <div className="flex flex-1 flex-col gap-6 bg-zinc-50 p-6">
-      <div className="flex items-baseline gap-2 font-bold text-zinc-900">
-        <span className="text-3xl font-medium text-zinc-800">Edit / </span>
-        <span className="text-2xl font-medium text-zinc-600">
+    <div className="flex flex-1 flex-col gap-6 bg-slate-50 p-6">
+      <div className="flex items-baseline gap-2 font-serif font-bold text-slate-900">
+        <span className="text-3xl font-medium text-slate-800">Edit / </span>
+        <span className="text-2xl font-medium text-slate-600">
           {state.note.title}
         </span>
       </div>
@@ -483,24 +482,24 @@ function NoteEditPage() {
       <div className="flex flex-1 gap-6 overflow-hidden">
         {/* Left column - page list */}
         <div className="flex w-1/2 flex-col gap-2">
-          <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border-2 border-gray-200 bg-zinc-100">
+          <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border-2 border-slate-200 bg-slate-100">
             <div
-              className={`z-10 flex shrink-0 items-center justify-between border-b-2 border-gray-200 bg-white px-4 py-3 transition-shadow ${
+              className={`z-10 flex shrink-0 items-center justify-between border-b-2 border-slate-200 bg-white px-4 py-3 transition-shadow ${
                 pageListScrolled ? 'shadow-md' : ''
               }`}
             >
               <div className="flex items-center gap-2">
                 <FontAwesomeIcon
                   icon={faFileLines}
-                  className="text-lg font-medium text-zinc-600"
+                  className="text-lg font-medium text-slate-600"
                 />
-                <span className="font-semibold text-zinc-800">Pages</span>
+                <span className="font-semibold text-slate-800">Pages</span>
               </div>
 
               {(loadingFiles || error) && (
                 <div className="flex items-center px-1">
                   {loadingFiles ? (
-                    <span className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <span className="flex items-center gap-1.5 text-xs text-slate-500">
                       <FontAwesomeIcon icon={faSpinner} spin />
                       {fileProgress
                         ? `Processing file ${fileProgress.current} of ${fileProgress.total}`
@@ -522,10 +521,10 @@ function NoteEditPage() {
                 </div>
               )}
 
-              <div className="flex items-center gap-2 text-zinc-500">
+              <div className="flex items-center gap-2 text-slate-500">
                 <label
                   title="Add files"
-                  className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-gray-300 text-blue-600 hover:bg-gray-50 ${loadingFiles ? 'pointer-events-none opacity-50' : ''}`}
+                  className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-slate-300 text-sea-teal hover:bg-slate-50 ${loadingFiles ? 'pointer-events-none opacity-50' : ''}`}
                 >
                   <FontAwesomeIcon icon={faPlus} />
                   <input
@@ -543,18 +542,18 @@ function NoteEditPage() {
                   title="Remove all files"
                   onClick={handleClearAll}
                   disabled={loadingFiles || !pages.length}
-                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-gray-300 px-2 text-xs text-red-500 hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50"
+                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-slate-300 px-2 text-xs text-red-500 hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50"
                 >
                   <FontAwesomeIcon icon={faTrashCan} size="lg" />
                 </button>
 
-                <div className="mx-1 h-7 w-px bg-gray-200" />
+                <div className="mx-1 h-7 w-px bg-slate-200" />
 
                 <button
                   type="button"
                   title="Scroll to top"
                   onClick={scrollToTop}
-                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-gray-300 hover:bg-gray-50"
+                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-slate-300 hover:bg-slate-50"
                 >
                   <FontAwesomeIcon icon={faArrowUp} />
                 </button>
@@ -562,7 +561,7 @@ function NoteEditPage() {
                   type="button"
                   title="Scroll to bottom"
                   onClick={scrollToBottom}
-                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-gray-300 hover:bg-gray-50"
+                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-slate-300 hover:bg-slate-50"
                 >
                   <FontAwesomeIcon icon={faArrowDown} />
                 </button>
@@ -572,7 +571,7 @@ function NoteEditPage() {
             <div
               ref={pageListRef}
               onScroll={handlePageListScroll}
-              className="flex-1 scrollbar-thin [scrollbar-color:var(--color-zinc-300)_transparent] space-y-2 overflow-y-auto p-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent"
+              className="flex-1 scrollbar-thin [scrollbar-color:var(--color-slate-300)_transparent] space-y-2 overflow-y-auto p-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-track]:bg-transparent"
             >
               <DragDropProvider onDragEnd={handleDragEnd}>
                 {pages.map((entry, displayPosition) => (
@@ -590,47 +589,34 @@ function NoteEditPage() {
 
         {/* Right column - note metadata */}
         <div className="flex flex-1 flex-col gap-3">
-          <div className="-mb-1 text-lg text-zinc-600">Title</div>
+          <div className="-mb-1 text-lg text-slate-600">Title</div>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="-mt-1 rounded-lg border border-gray-300 bg-white p-2 text-2xl font-medium text-zinc-800 focus:outline-gray-300"
+            className="-mt-1 rounded-lg border border-slate-300 bg-white p-2 font-serif text-2xl font-medium text-slate-800 focus:outline-slate-300"
           />
 
-          <div className="-mb-1 text-lg text-zinc-600">Subject</div>
-          <select
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            className={`rounded-lg border border-gray-300 bg-white px-2 py-2 focus:border-gray-300 focus:outline-none ${subject === '' ? 'text-zinc-400' : 'text-zinc-800'}`}
-          >
-            <option value="" disabled>
-              Subject (required)
-            </option>
-            {SUBJECTS.map((s) => (
-              <option key={s} value={s} className="text-zinc-700">
-                {s}
-              </option>
-            ))}
-          </select>
+          <div className="-mb-1 text-lg text-slate-600">Subject</div>
+          <SubjectCombobox value={subjectId} onChange={setSubjectId} />
 
-          <div className="-mb-1 text-lg text-zinc-600">Description</div>
+          <div className="-mb-1 text-lg text-slate-600">Description</div>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="flex-1 resize-none rounded-lg border border-gray-300 bg-white p-2 text-gray-800 focus:outline-gray-300"
+            className="flex-1 resize-none rounded-lg border border-slate-300 bg-white p-2 text-slate-800 focus:outline-slate-300"
           />
 
           <div className="flex gap-3">
             <button
               onClick={() => navigate(`/notes/${id}`)}
-              className="cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50"
+              className="cursor-pointer rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving || loadingFiles}
-              className="cursor-pointer rounded-md bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
+              className="cursor-pointer rounded-md bg-sea-teal px-4 py-2 text-sm text-white hover:bg-sea-teal-dark disabled:opacity-50"
             >
               {saving ? 'Saving...' : 'Save'}
             </button>

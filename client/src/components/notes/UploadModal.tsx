@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react'
 
-import { useSubjects } from '@/lib/subjects'
+import SubjectCombobox from '@/components/common/SubjectCombobox'
 
 import {
   faXmark,
@@ -15,7 +15,7 @@ type UploadModalProps = {
   open: boolean
   onSubmit: (data: {
     title: string
-    subject: string
+    subjectId: number
     description: string
     files: File[]
   }) => Promise<void>
@@ -23,10 +23,8 @@ type UploadModalProps = {
 }
 
 function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
-  const SUBJECTS = useSubjects()
-
   const [title, setTitle] = useState('')
-  const [subject, setSubject] = useState('')
+  const [subjectId, setSubjectId] = useState<number | null>(null)
   const [description, setDescription] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [uploadType, setUploadType] = useState<'pdf' | 'images'>('pdf')
@@ -37,7 +35,7 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
 
   const resetState = () => {
     setTitle('')
-    setSubject('')
+    setSubjectId(null)
     setDescription('')
     setFiles([])
     setUploadType('pdf')
@@ -56,13 +54,15 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
 
   return (
     <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/50">
-      <div className="w-200 rounded-2xl bg-zinc-100 p-6 shadow-xl">
+      <div className="w-200 rounded-2xl bg-slate-100 p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-zinc-800">Upload Notes</h2>
+          <h2 className="font-serif text-2xl font-bold text-slate-800">
+            Upload Notes
+          </h2>
           <button
             onClick={handleClose}
             disabled={isSubmitting}
-            className="cursor-pointer text-xl text-gray-500 hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
+            className="cursor-pointer text-xl text-slate-500 hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
           >
             <FontAwesomeIcon icon={faXmark} />
           </button>
@@ -72,7 +72,7 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
           onSubmit={async (e) => {
             e.preventDefault()
 
-            if (!title || !subject) {
+            if (!title || !subjectId) {
               setSubmitError('Please fill in all required fields.')
               return
             }
@@ -87,7 +87,7 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
             try {
               await onSubmit({
                 title,
-                subject,
+                subjectId,
                 description,
                 files,
               })
@@ -106,14 +106,14 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
           {/* Left column: files */}
           <div className="flex w-1/2 flex-col gap-3">
             <div className="flex items-center">
-              <div className="mr-2 text-zinc-700">Upload Type:</div>
+              <div className="mr-2 text-slate-700">Upload Type:</div>
               <select
                 value={uploadType}
                 onChange={(e) => {
                   setUploadType(e.target.value as 'pdf' | 'images')
                   setFiles([])
                 }}
-                className="flex-1 rounded-lg border border-gray-300 p-2 text-gray-700 focus:border-gray-300 focus:outline-none"
+                className="flex-1 rounded-lg border border-slate-300 p-2 text-slate-700 focus:border-slate-300 focus:outline-none"
               >
                 <option value="pdf">PDF</option>
                 <option value="images">Images</option>
@@ -139,13 +139,13 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
             />
             <label
               htmlFor="fileInput"
-              className="flex h-28 cursor-pointer flex-col items-center rounded-lg border-2 border-dashed border-gray-300 px-4 py-2 text-gray-500 hover:bg-gray-100"
+              className="flex h-28 cursor-pointer flex-col items-center rounded-lg border-2 border-dashed border-slate-300 px-4 py-2 text-slate-500 hover:bg-slate-100"
             >
               <div className="mt-5">
                 <FontAwesomeIcon icon={faCloudArrowUp} className="mr-2" />
                 Upload {uploadType === 'pdf' ? 'PDF' : 'Images'}
               </div>
-              <div className="mt-auto text-center text-xs text-zinc-400">
+              <div className="mt-auto text-center text-xs text-slate-400">
                 Supported formats:{' '}
                 {uploadType === 'pdf'
                   ? 'PDF'
@@ -158,27 +158,27 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
               {files.map((file, index) => (
                 <div
                   key={`${file.name}-${index}`}
-                  className="flex items-center border-b border-gray-300 py-2"
+                  className="flex items-center border-b border-slate-300 py-2"
                 >
                   <FontAwesomeIcon
                     key={`${file.name}-${index}`}
                     icon={
                       file.type.startsWith('image/') ? faFileImage : faFileLines
                     }
-                    className="mr-2 text-zinc-400"
+                    className="mr-2 text-slate-400"
                   />
-                  <p className="truncate text-sm text-gray-700">{file.name}</p>
+                  <p className="truncate text-sm text-slate-700">{file.name}</p>
                   <button
                     type="button"
                     onClick={() => removeFile(index)}
-                    className="ml-auto cursor-pointer px-2 text-zinc-400 hover:text-red-500"
+                    className="ml-auto cursor-pointer px-2 text-slate-400 hover:text-red-500"
                   >
                     <FontAwesomeIcon icon={faXmark} />
                   </button>
                 </div>
               ))}
             </div>
-            <p className="h-0 pb-1 text-xs text-gray-500">
+            <p className="h-0 pb-1 text-xs text-slate-500">
               {files.length === 0
                 ? 'No files selected yet!'
                 : `${files.length} file${files.length === 1 ? '' : 's'} selected`}
@@ -192,29 +192,16 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Title (required)"
-              className="rounded-lg border border-gray-300 px-3 py-2 font-medium text-zinc-800 placeholder:font-normal placeholder:text-zinc-400 focus:border-gray-300 focus:outline-none"
+              className="rounded-lg border border-slate-300 px-3 py-2 font-medium text-slate-800 placeholder:font-normal placeholder:text-slate-400 focus:border-slate-300 focus:outline-none"
             />
 
-            <select
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              className={`rounded-lg border border-gray-300 px-2 py-2 focus:border-gray-300 focus:outline-none ${subject === '' ? 'text-zinc-400' : 'text-zinc-800'}`}
-            >
-              <option value="" disabled>
-                Subject (required)
-              </option>
-              {SUBJECTS.map((s) => (
-                <option key={s} value={s} className="text-zinc-700">
-                  {s}
-                </option>
-              ))}
-            </select>
+            <SubjectCombobox value={subjectId} onChange={setSubjectId} />
 
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Description"
-              className="flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-zinc-800 placeholder:text-zinc-400 focus:border-gray-300 focus:outline-none"
+              className="flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2 text-slate-800 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none"
             />
             {submitError && (
               <p className="text-xs text-red-500">{submitError}</p>
@@ -222,7 +209,7 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-500 p-3 text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-blue-300"
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-sea-teal p-3 text-white transition hover:bg-sea-teal-dark disabled:cursor-not-allowed disabled:bg-sea-teal-light"
             >
               {isSubmitting ? (
                 <>

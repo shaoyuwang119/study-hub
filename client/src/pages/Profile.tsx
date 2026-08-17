@@ -37,7 +37,7 @@ function Profile() {
             .single(),
           supabase
             .from('notes')
-            .select('*')
+            .select('*, subject:subjects(id, name, category)')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false }),
         ])
@@ -57,16 +57,16 @@ function Profile() {
   }, [])
 
   return (
-    <div className="flex-1 overflow-y-auto bg-zinc-50 p-6">
+    <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
       <div className="mb-6 flex items-center gap-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-2xl font-semibold text-blue-600">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-sea-sky text-2xl font-semibold text-sea-teal-dark">
           {displayName ? displayName.charAt(0).toUpperCase() : '?'}
         </div>
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">
+          <h1 className="font-serif text-2xl font-semibold text-slate-900">
             {loading ? 'Loading...' : displayName}
           </h1>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-slate-500">
             {notes.length} note{notes.length === 1 ? '' : 's'} created
           </p>
         </div>
@@ -75,7 +75,7 @@ function Profile() {
       {error && <ErrorDisplay message={error} />}
 
       {!loading && !error && notes.length === 0 && (
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-slate-400">
           You haven't created any notes yet.
         </p>
       )}
@@ -83,7 +83,7 @@ function Profile() {
       <div className="flex flex-wrap gap-x-3 gap-y-4">
         {notes.map((note) => (
           <Link key={note.id} to={`/notes/${note.id}`}>
-            <NoteCard note={note} preview={note.preview_url ?? ''} />
+            <NoteCard note={note} />
           </Link>
         ))}
       </div>

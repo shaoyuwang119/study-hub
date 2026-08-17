@@ -108,7 +108,7 @@ function NotePage() {
 
       const { data, error } = await supabase
         .from('notes')
-        .select('*')
+        .select('*, subject:subjects(id, name, category)')
         .eq('id', id)
         .maybeSingle()
 
@@ -180,7 +180,7 @@ function NotePage() {
               <button
                 onClick={() => setIsExpanded((prev) => !prev)}
                 aria-label={isExpanded ? 'Exit fullscreen' : 'Expand preview'}
-                className="absolute top-4 right-4 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+                className="absolute right-8 bottom-4 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
               >
                 <FontAwesomeIcon icon={isExpanded ? faCompress : faExpand} />
               </button>
@@ -192,15 +192,15 @@ function NotePage() {
                   className="h-full w-full"
                 />
               ) : (
-                <div className="flex h-full items-center justify-center text-gray-400">
+                <div className="flex h-full items-center justify-center text-slate-400">
                   No content attached.
                 </div>
               )}
             </div>
 
             {!isExpanded && (
-              <div className="flex flex-1 flex-col gap-3 bg-zinc-50 px-6 py-5 shadow-md">
-                <div className="flex gap-4 border-b border-gray-200">
+              <div className="flex flex-1 flex-col gap-3 bg-slate-50 px-6 py-5 shadow-md">
+                <div className="flex gap-4 border-b border-slate-200">
                   {(['details', 'comments', 'related'] as const).map((tab) => (
                     <button
                       key={tab}
@@ -208,7 +208,7 @@ function NotePage() {
                       className={`cursor-pointer border-b-2 px-1 pb-1 text-sm font-medium capitalize ${
                         activeTab === tab
                           ? 'border-black text-black'
-                          : 'border-transparent text-gray-400 hover:text-gray-600'
+                          : 'border-transparent text-slate-400 hover:text-slate-600'
                       }`}
                     >
                       {tab}
@@ -220,19 +220,19 @@ function NotePage() {
                       <button
                         onClick={() => setShowMenu((prev) => !prev)}
                         aria-label="Note options"
-                        className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
+                        className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
                       >
                         <FontAwesomeIcon icon={faEllipsisVertical} />
                       </button>
 
                       {showMenu && (
-                        <div className="absolute right-0 z-10 mt-1 w-36 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg">
+                        <div className="absolute right-0 z-10 mt-1 w-36 overflow-hidden rounded-md border border-slate-200 bg-white shadow-lg">
                           <button
                             onClick={() => {
                               setShowMenu(false)
                               navigate(`/notes/${id}/edit`)
                             }}
-                            className="block w-full cursor-pointer px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                            className="block w-full cursor-pointer px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
                           >
                             Edit Note
                           </button>
@@ -253,43 +253,45 @@ function NotePage() {
 
                 {activeTab === 'details' && (
                   <div className="flex flex-col gap-3 pt-1">
-                    <h1 className="text-3xl font-bold">{note.title}</h1>
+                    <h1 className="font-serif text-3xl font-medium">
+                      {note.title}
+                    </h1>
 
                     {note.subject && (
-                      <span className="w-fit rounded-full border border-gray-300 px-3 py-1 text-sm text-gray-600">
-                        {note.subject}
+                      <span className="w-fit rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-600">
+                        {note.subject.name}
                       </span>
                     )}
 
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-slate-600">
                       Author: {note.author}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-slate-600">
                       Date published: {publishedDate}
                     </p>
                     {editedDate && (
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-slate-600">
                         Date edited: {editedDate}
                       </p>
                     )}
                     {fileSize !== null && (
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-slate-600">
                         File size: {formatSize(fileSize)}
                       </p>
                     )}
 
-                    <p className="mt-2 text-gray-800">{note.description}</p>
+                    <p className="mt-2 text-slate-800">{note.description}</p>
                   </div>
                 )}
 
                 {activeTab === 'comments' && (
-                  <p className="pt-6 text-sm text-gray-400">
+                  <p className="pt-6 text-sm text-slate-400">
                     Comments coming soon.
                   </p>
                 )}
 
                 {activeTab === 'related' && (
-                  <p className="pt-6 text-sm text-gray-400">
+                  <p className="pt-6 text-sm text-slate-400">
                     Related notes coming soon.
                   </p>
                 )}
@@ -301,7 +303,7 @@ function NotePage() {
     }
   }
 
-  return <div className="flex flex-1 bg-zinc-50">{renderContent()}</div>
+  return <div className="flex flex-1 bg-slate-50">{renderContent()}</div>
 }
 
 export default NotePage

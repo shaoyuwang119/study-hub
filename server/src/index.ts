@@ -76,9 +76,9 @@ app.post(
   upload.array('files', FILES_LIMIT),
   async (req: AuthedRequest, res) => {
     const files = req.files as Express.Multer.File[]
-    const { title, subject, description, author } = req.body
+    const { title, subject_id, description, author } = req.body
 
-    if (!title || !subject) {
+    if (!title || !subject_id) {
       return res.status(400).json({ error: 'Fields missing' })
     }
 
@@ -156,7 +156,7 @@ app.post(
       .from('notes')
       .insert({
         title,
-        subject,
+        subject_id: Number(subject_id),
         description,
         author,
         saves: 0,
@@ -371,7 +371,7 @@ app.post(
       .from('notes')
       .update({
         title: newNoteData.title ?? note.title,
-        subject: newNoteData.subject ?? note.subject,
+        subject_id: newNoteData.subject_id ?? note.subject_id,
         description: newNoteData.description ?? note.description,
         content_url: publicUrl,
         updated_at: new Date().toISOString(),
@@ -420,9 +420,9 @@ app.post(
 // preview entirely.
 app.patch('/api/notes/:id', requireAuth, async (req: AuthedRequest, res) => {
   const { id } = req.params
-  const { title, subject, description } = req.body
+  const { title, subject_id, description } = req.body
 
-  if (!title || !subject) {
+  if (!title || !subject_id) {
     return res.status(400).json({ error: 'Fields missing' })
   }
 
@@ -432,7 +432,7 @@ app.patch('/api/notes/:id', requireAuth, async (req: AuthedRequest, res) => {
     .from('notes')
     .update({
       title,
-      subject,
+      subject_id,
       description,
       updated_at: new Date().toISOString(),
     })

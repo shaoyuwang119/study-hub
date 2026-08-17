@@ -1,26 +1,20 @@
-﻿import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
-// TODO: once a `subjects` table exists, replace this with a fetch, e.g.
-// useEffect(() => {
-//   supabase.from('subjects').select('name').then(({ data }) => {
-//     if (data) setSubjects(data.map((s) => s.name).sort())
-//   })
-// }, [])
-const HARDCODED_SUBJECTS = [
-  'Math',
-  'Science',
-  'English',
-  'History',
-  'Geography',
-  'Biology',
-  'Chemistry',
-  'Physics',
-  'Computer Science',
-  'Art',
-  'Music',
-].sort()
+import { supabase } from '@/lib/supabase'
+import type { Subject } from '@/types'
 
 export function useSubjects() {
-  const [subjects] = useState(HARDCODED_SUBJECTS)
+  const [subjects, setSubjects] = useState<Subject[]>([])
+
+  useEffect(() => {
+    supabase
+      .from('subjects')
+      .select('id, name, category')
+      .order('name')
+      .then(({ data }) => {
+        if (data) setSubjects(data)
+      })
+  }, [])
+
   return subjects
 }

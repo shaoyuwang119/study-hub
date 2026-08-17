@@ -1,37 +1,28 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useOutletContext } from 'react-router-dom'
 
-import type { User } from '@supabase/supabase-js'
-
-import {
-  NoteCard,
-  Rightbar,
-  UploadModal,
-  ErrorDisplay,
-  Loading,
-} from '@/components'
+import { NoteCard, ErrorDisplay, Loading } from '@/components'
 
 import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
 import { usePageTitle } from '@/lib/usePageTitle'
-
-import { faSquarePlus } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useSavedNotes } from '@/lib/useSavedNotes'
+import type { LayoutContext } from '@/components/auth/ProtectedRoute'
 
 function Home() {
-  const navigate = useNavigate()
+  const { searchQuery } = useOutletContext<LayoutContext>()
   const [notes, setNotes] = useState<Note[]>([])
   const [error, setError] = useState<string | null>()
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showUpload, setShowUpload] = useState(false)
 
   const [loading, setLoading] = useState(true)
+
+  const { savedIds, toggleSave } = useSavedNotes()
 
   const filteredNotes = notes.filter((note) => {
     const query = searchQuery.toLowerCase()
     return (
       note.title.toLowerCase().includes(query) ||
-      note.subject?.toLowerCase().includes(query) ||
+      note.subject?.name.toLowerCase().includes(query) ||
       note.description?.toLowerCase().includes(query)
     )
   })
@@ -40,7 +31,9 @@ function Home() {
 
   useEffect(() => {
     const fetchNotes = async () => {
-      const { data, error } = await supabase.from('notes').select('*')
+      const { data, error } = await supabase
+        .from('notes')
+        .select('*, subject:subjects(id, name, category)')
       if (error) {
         setError(error.message)
         return
@@ -69,109 +62,15 @@ function Home() {
     fetchNotes()
   }, [])
 
-  // not sure whether this function will be useful yet -- but keeping it just in case.
-  const uploadFileMetadata = async (
-    user: User,
-    noteData: any,
-    fileName: string,
-    fileUrl: string,
-    fileType: string
-  ) => {
-    const { data: fileData, error: fileError } = await supabase
-      .from('files')
-      .insert({
-        user_id: user.id,
-        note_id: noteData.id,
-        file_name: fileName,
-        file_url: fileUrl,
-        file_type: fileType,
-      })
-      .select()
-      .single()
-
-    if (fileError) {
-      setError(fileError.message)
-      return
-    }
-
-    return [fileData, fileError]
-  }
-
-  const handleSubmit = async (newNote: {
-    title: string
-    subject: string
-    description: string
-    files: File[]
-  }) => {
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      if (!session) {
-        throw new Error('Not authenticated')
-      }
-
-      const formData = new FormData()
-      formData.append('title', newNote.title)
-      formData.append('subject', newNote.subject)
-      formData.append('description', newNote.description)
-      newNote.files.forEach((file) => formData.append('files', file))
-
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/notes`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: formData,
-      })
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => null)
-        throw new Error(body?.error ?? 'Failed to upload note.')
-      }
-
-      const noteData = await res.json()
-      setNotes((prev) => [...prev, noteData])
-      navigate(`/notes/${noteData.id}`)
-    } catch (err) {
-      console.error(err)
-      throw err
-    }
-  }
-
   return (
-    <div className="flex h-screen flex-1">
-      <div className="flex-1 scrollbar-thin scrollbar-thumb-zinc-300 scrollbar-gutter-stable flex-col overflow-y-auto bg-zinc-50 p-6">
-        <div className="mb-4 flex flex-row justify-between">
-          <div className="text-4xl font-medium text-zinc-900">Home</div>
-          <button
-            onClick={() => setShowUpload(true)}
-            className="transition-shadows w-fit cursor-pointer rounded-md bg-blue-500 px-4 py-2 text-white duration-200 hover:bg-blue-600 hover:shadow-sm"
-          >
-            <FontAwesomeIcon icon={faSquarePlus} className="mr-2" />
-            Upload Notes
-          </button>
-        </div>
-        <UploadModal
-          open={showUpload}
-          onSubmit={handleSubmit}
-          onClose={() => setShowUpload(false)}
-        />
-
-        <div className="mb-2 space-y-2">
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search notes, classes, subjects..."
-            className="w-full rounded-lg border border-gray-200 bg-zinc-50 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
-          />
-          <div className="flex gap-x-4">
-            {/* <button className="w-40 text-pink-500 p-2 rounded-md border border-pink-600 hover:bg-pink-100 cursor-pointer">
-              English
-            </button> */}
-          </div>
+    <div className="flex h-full flex-1">
+      <div className="flex-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-gutter-stable flex-col overflow-y-auto bg-slate-50 p-6">
+        <div className="mb-4 font-serif text-4xl font-medium text-slate-900">
+          Home
         </div>
 
         <div className="flex flex-col gap-y-3">
-          <div className="mx-1 text-xl">Continue studying</div>
+          <div className="mx-1 text-xl text-slate-800">Continue studying</div>
           {error && <ErrorDisplay message={error} />}
           <div className="flex flex-wrap gap-x-3 gap-y-4">
             {loading ? (
@@ -181,7 +80,11 @@ function Home() {
             ) : (
               filteredNotes.map((note) => (
                 <Link key={note.id} to={`/notes/${note.id}`}>
-                  <NoteCard note={note} preview={note.preview_url ?? ''} />
+                  <NoteCard
+                    note={note}
+                    isSaved={savedIds.has(note.id)}
+                    onToggleSave={toggleSave}
+                  />
                 </Link>
               ))
             )}
@@ -190,7 +93,19 @@ function Home() {
         </div>
       </div>
 
-      <Rightbar notes={notes} />
+      <aside className="w-72 overflow-y-auto border-l border-slate-200 bg-slate-50 px-4 py-8">
+        <div className="text-xl text-slate-800">My saved</div>
+        <div className="mt-4 flex flex-col gap-y-2">
+          <div className="text-sm text-slate-500">
+            No notes saved currently.
+          </div>
+          {/* {notes.map((note) => (
+          <Link key={note.id} to={`/notes/${note.id}`} className="block">
+            <NoteCardMini note={note} />
+          </Link>
+        ))} */}
+        </div>
+      </aside>
     </div>
   )
 }

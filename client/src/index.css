@@ -1,6 +1,19 @@
 @import 'tailwindcss';
 
+/* "Gentle Sea Breeze" light theme palette - swap these to re-theme the app */
+@theme {
+  --color-sea-navy: #022b3a;
+  --color-sea-teal: #1f7a8c;
+  --color-sea-teal-dark: #175e6b;
+  --color-sea-teal-light: #7fb0bc;
+  --color-sea-sky: #bfdbf7;
+  --color-sea-lavender: #e1e5f2;
+
+  --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Fraunces', ui-serif, Georgia, serif;
+}
+
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
+  font-family: var(--font-sans);
 }

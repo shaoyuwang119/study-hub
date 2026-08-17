@@ -6,6 +6,20 @@ import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
 import { usePageTitle } from '@/lib/usePageTitle'
 
+async function resolveAuthors(notes: Note[]): Promise<Note[]> {
+  const userIds = [...new Set(notes.map((note) => note.user_id))]
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, display_name')
+    .in('id', userIds)
+
+  const authorById = new Map(profiles?.map((p) => [p.id, p.display_name]))
+  return notes.map((note) => ({
+    ...note,
+    author: authorById.get(note.user_id) ?? note.author,
+  }))
+}
+
 function Explore() {
   const [query, setQuery] = useState('')
   const [author, setAuthor] = useState('')
@@ -24,14 +38,17 @@ function Explore() {
       setLoading(true)
 
       // Fetches notes from supabase
-      const { data, error } = await supabase.from('notes').select('*')
+      const { data, error } = await supabase
+        .from('notes')
+        .select('*, subject:subjects(id, name, category)')
       if (error) {
         setError(error.message)
         return
       }
 
-      setAllNotes(data)
-      setResults(data)
+      const resolved = await resolveAuthors(data)
+      setAllNotes(resolved)
+      setResults(resolved)
       setLoading(false)
     }
     loadAll()
@@ -59,7 +76,7 @@ function Explore() {
 
       const { data, error } = await supabase
         .from('notes')
-        .select('*')
+        .select('*, subject:subjects(id, name, category)')
         .ilike('title', `%${query}%`)
         .ilike('author', `%${author}%`)
 
@@ -68,8 +85,8 @@ function Explore() {
         return
       }
 
-      setResults(data || [])
-      console.log(data)
+      const resolved = await resolveAuthors(data ?? [])
+      setResults(resolved)
       setLoading(false)
     } catch (err) {
       if (err instanceof Error) {
@@ -90,22 +107,24 @@ function Explore() {
   const displayedNotes = results
 
   return (
-    <div className="flex min-h-screen flex-1">
-      <div className="flex-1 flex-col bg-zinc-50 p-6">
+    <div className="flex min-h-full flex-1">
+      <div className="flex-1 flex-col bg-slate-50 p-6">
         {/* Page header */}
         <div className="mb-6">
-          <div className="text-4xl font-medium text-zinc-900">Explore</div>
-          <p className="mt-1 text-sm text-zinc-400">
+          <div className="font-serif text-4xl font-medium text-slate-900">
+            Explore
+          </div>
+          <p className="mt-1 text-sm text-slate-400">
             Search notes shared by the community
           </p>
         </div>
 
         {/* Search bar area */}
-        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-xs">
+        <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
           <div className="flex flex-col gap-3">
             {/* Title search */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-zinc-500">
+              <label className="text-xs font-medium text-slate-500">
                 Search by title
               </label>
               <input
@@ -113,13 +132,13 @@ function Explore() {
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="e.g. Calculus derivatives, WW2 notes..."
-                className="w-full rounded-lg border border-gray-200 bg-zinc-50 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-sea-teal focus:ring-2 focus:ring-sea-lavender focus:outline-none"
               />
             </div>
 
             {/* Author search */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-zinc-500">
+              <label className="text-xs font-medium text-slate-500">
                 Search by author
               </label>
               <input
@@ -127,7 +146,7 @@ function Explore() {
                 onChange={(e) => setAuthor(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="e.g. John D..."
-                className="w-full rounded-lg border border-gray-200 bg-zinc-50 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-sea-teal focus:ring-2 focus:ring-sea-lavender focus:outline-none"
               />
             </div>
 
@@ -135,7 +154,7 @@ function Explore() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleSearch}
-                className="cursor-pointer rounded-lg bg-blue-500 px-5 py-2 text-sm font-medium text-white transition hover:bg-blue-600"
+                className="cursor-pointer rounded-lg bg-sea-teal px-5 py-2 text-sm font-medium text-white transition hover:bg-sea-teal-dark"
               >
                 Search
               </button>
@@ -147,13 +166,13 @@ function Explore() {
                     setResults(allNotes)
                     setSearched(false)
                   }}
-                  className="cursor-pointer rounded-lg border border-gray-200 px-5 py-2 text-sm text-zinc-500 transition hover:bg-zinc-100"
+                  className="cursor-pointer rounded-lg border border-slate-200 px-5 py-2 text-sm text-slate-500 transition hover:bg-slate-100"
                 >
                   Clear
                 </button>
               )}
               {searched && !loading && (
-                <span className="ml-auto text-xs text-zinc-400">
+                <span className="ml-auto text-xs text-slate-400">
                   {results.length} result{results.length !== 1 ? 's' : ''}
                 </span>
               )}
@@ -169,18 +188,18 @@ function Explore() {
 
         {/* Results section */}
         <div>
-          <div className="mb-3 text-sm font-medium text-zinc-500">
+          <div className="mb-3 text-sm font-medium text-slate-500">
             {searched ? 'Search results' : 'All notes'}
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-16 text-sm text-zinc-400">
+            <div className="flex items-center justify-center py-16 text-sm text-slate-400">
               Loading...
             </div>
           ) : displayedNotes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 py-16 text-center">
-              <p className="text-sm text-zinc-500">No notes found</p>
-              <p className="mt-1 text-xs text-zinc-400">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 py-16 text-center">
+              <p className="text-sm text-slate-500">No notes found</p>
+              <p className="mt-1 text-xs text-slate-400">
                 Try a different title or author name
               </p>
             </div>
@@ -188,7 +207,7 @@ function Explore() {
             <div className="flex flex-wrap gap-4">
               {displayedNotes.map((note) => (
                 <Link key={note.id} to={`/notes/${note.id}`}>
-                  <NoteCard note={note} preview={note.preview_url ?? ''} />
+                  <NoteCard note={note} />
                 </Link>
               ))}
             </div>
