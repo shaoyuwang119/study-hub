@@ -8,8 +8,9 @@ export function useSavedNotes() {
   useEffect(() => {
     async function fetchSaved() {
       const {
-        data: { user },
-      } = await supabase.auth.getUser()
+        data: { session },
+      } = await supabase.auth.getSession()
+      const user = session?.user
       if (!user) return
 
       const { data } = await supabase
@@ -25,8 +26,9 @@ export function useSavedNotes() {
 
   const toggleSave = useCallback(async (noteId: number, isSaved: boolean) => {
     const {
-      data: { user },
-    } = await supabase.auth.getUser()
+      data: { session },
+    } = await supabase.auth.getSession()
+    const user = session?.user
     if (!user) return
 
     if (isSaved) {
@@ -42,7 +44,7 @@ export function useSavedNotes() {
         .eq('note_id', noteId)
     } else {
       setSavedIds((prev) => new Set(prev).add(noteId))
-      const { data, error } = await supabase
+      await supabase
         .from('note_saves')
         .insert({ user_id: user.id, note_id: noteId })
     }

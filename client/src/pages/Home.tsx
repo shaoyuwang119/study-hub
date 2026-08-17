@@ -56,6 +56,7 @@ function Home() {
       const {
         data: { user },
       } = await supabase.auth.getUser()
+
       setLoading(false)
     }
 
@@ -65,12 +66,17 @@ function Home() {
   return (
     <div className="flex h-full flex-1">
       <div className="flex-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-gutter-stable flex-col overflow-y-auto bg-slate-50 p-6">
-        <div className="mb-4 font-serif text-4xl font-medium text-slate-900">
-          Home
+        <div className="mb-6">
+          <div className="font-serif text-4xl font-medium text-slate-900">
+            Home
+          </div>
+          {/* <p className="mt-1 text-sm text-slate-500">Hello</p> */}
         </div>
 
         <div className="flex flex-col gap-y-3">
-          <div className="mx-1 text-xl text-slate-800">Continue studying</div>
+          <div className="font-serif text-xl font-medium text-slate-800">
+            Continue studying
+          </div>
           {error && <ErrorDisplay message={error} />}
           <div className="flex flex-wrap gap-x-3 gap-y-4">
             {loading ? (

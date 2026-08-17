@@ -25,6 +25,9 @@ const PORT = process.env.PORT || 3000 // hosts like Render assign the port dynam
 const FILES_LIMIT = 200
 const MAX_PDF_SIZE = 50 * 1024 * 1024 // applied both per-file (multer) and to the final merged/rebuilt PDF
 
+const TITLE_MAX_LENGTH = 100
+const DESCRIPTION_MAX_LENGTH = 500
+
 console.log(process.env.SUPABASE_URL)
 
 app.use(cors())
@@ -80,6 +83,22 @@ app.post(
 
     if (!title || !subject_id) {
       return res.status(400).json({ error: 'Fields missing' })
+    }
+
+    if (title.length > TITLE_MAX_LENGTH) {
+      return res
+        .status(400)
+        .json({
+          error: `Title must be ${TITLE_MAX_LENGTH} characters or fewer`,
+        })
+    }
+
+    if (description && description.length > DESCRIPTION_MAX_LENGTH) {
+      return res
+        .status(400)
+        .json({
+          error: `Description must be ${DESCRIPTION_MAX_LENGTH} characters or fewer`,
+        })
     }
 
     if (!files || files.length === 0) {

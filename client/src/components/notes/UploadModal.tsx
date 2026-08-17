@@ -187,29 +187,41 @@ function UploadModal({ open, onClose, onSubmit }: UploadModalProps) {
 
           {/* Right column: metadata */}
           <div className="flex h-90 w-1/2 flex-col gap-3">
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Title (required)"
-              className="rounded-lg border border-slate-300 px-3 py-2 font-medium text-slate-800 placeholder:font-normal placeholder:text-slate-400 focus:border-slate-300 focus:outline-none"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Title (required)"
+                maxLength={70}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 pr-12 font-medium text-slate-800 placeholder:font-normal placeholder:text-slate-400 focus:border-slate-300 focus:outline-none"
+              />
+              <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-slate-400">
+                {title.length}/70
+              </span>
+            </div>
 
             <SubjectCombobox value={subjectId} onChange={setSubjectId} />
 
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Description"
-              className="flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2 text-slate-800 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none"
-            />
+            <div className="relative flex-1">
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Description"
+                maxLength={500}
+                className="h-full w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-slate-800 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none"
+              />
+              <span className="pointer-events-none absolute right-3 bottom-2 rounded bg-slate-100 px-1 text-xs text-slate-400">
+                {description.length}/500
+              </span>
+            </div>
             {submitError && (
               <p className="text-xs text-red-500">{submitError}</p>
             )}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-sea-teal p-3 text-white transition hover:bg-sea-teal-dark disabled:cursor-not-allowed disabled:bg-sea-teal-light"
+              className="bg-sea-teal hover:bg-sea-teal-dark disabled:bg-sea-teal-light flex cursor-pointer items-center justify-center gap-2 rounded-lg p-3 text-white transition disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <>

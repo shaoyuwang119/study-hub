@@ -5,12 +5,15 @@ import { NoteCard, ErrorDisplay } from '@/components'
 import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
 import { usePageTitle } from '@/lib/usePageTitle'
+import { useSavedNotes } from '@/lib/useSavedNotes'
 
 function Profile() {
   const [displayName, setDisplayName] = useState('')
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const { savedIds, toggleSave } = useSavedNotes()
 
   usePageTitle('Profile | StudyNote')
 
@@ -59,7 +62,7 @@ function Profile() {
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
       <div className="mb-6 flex items-center gap-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-sea-sky text-2xl font-semibold text-sea-teal-dark">
+        <div className="bg-sea-sky text-sea-teal-dark flex h-16 w-16 items-center justify-center rounded-full text-2xl font-semibold">
           {displayName ? displayName.charAt(0).toUpperCase() : '?'}
         </div>
         <div>
@@ -83,7 +86,11 @@ function Profile() {
       <div className="flex flex-wrap gap-x-3 gap-y-4">
         {notes.map((note) => (
           <Link key={note.id} to={`/notes/${note.id}`}>
-            <NoteCard note={note} />
+            <NoteCard
+              note={note}
+              isSaved={savedIds.has(note.id)}
+              onToggleSave={toggleSave}
+            />
           </Link>
         ))}
       </div>

@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
 import { formatSize } from '@/lib/formatFileSize'
 
-import { Sidebar, ErrorDisplay, Loading } from '@/components'
+import { ErrorDisplay, Loading } from '@/components'
 import type { User } from '@supabase/supabase-js'
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -13,8 +13,12 @@ import {
   faExpand,
   faCompress,
   faEllipsisVertical,
+  faStar as faStarSolid,
 } from '@fortawesome/free-solid-svg-icons'
+import { faStar } from '@fortawesome/free-regular-svg-icons'
+
 import { usePageTitle } from '@/lib/usePageTitle'
+import { useSavedNotes } from '@/lib/useSavedNotes'
 
 type FetchState =
   | { status: 'loading' }
@@ -37,6 +41,9 @@ function NotePage() {
 
   const [showMenu, setShowMenu] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  const { savedIds, toggleSave } = useSavedNotes()
+  const [saveCount, setSaveCount] = useState(0)
 
   usePageTitle(
     state.status === 'ready'
@@ -67,6 +74,17 @@ function NotePage() {
     }
 
     navigate('/')
+  }
+
+  useEffect(() => {
+    if (state.status === 'ready') setSaveCount(state.note.saves)
+  }, [state])
+
+  function handleToggleSave() {
+    if (state.status !== 'ready') return
+    const isSaved = savedIds.has(state.note.id)
+    setSaveCount((prev) => prev + (isSaved ? -1 : 1))
+    toggleSave(state.note.id, isSaved)
   }
 
   useEffect(() => {
@@ -170,6 +188,7 @@ function NotePage() {
 
         return (
           <div className="flex h-full w-full gap-2">
+            {/* PDF viewer on the left */}
             <div
               className={`overflow-hidden bg-black transition-all duration-200 ${
                 isExpanded
@@ -199,6 +218,7 @@ function NotePage() {
             </div>
 
             {!isExpanded && (
+              // Tabs
               <div className="flex flex-1 flex-col gap-3 bg-slate-50 px-6 py-5 shadow-md">
                 <div className="flex gap-4 border-b border-slate-200">
                   {(['details', 'comments', 'related'] as const).map((tab) => (
@@ -207,7 +227,7 @@ function NotePage() {
                       onClick={() => setActiveTab(tab)}
                       className={`cursor-pointer border-b-2 px-1 pb-1 text-sm font-medium capitalize ${
                         activeTab === tab
-                          ? 'border-black text-black'
+                          ? 'border-slate-800 text-slate-900'
                           : 'border-transparent text-slate-400 hover:text-slate-600'
                       }`}
                     >
@@ -215,45 +235,71 @@ function NotePage() {
                     </button>
                   ))}
 
-                  {note.user_id === user?.id && (
-                    <div className="relative mb-1 ml-auto" ref={menuRef}>
-                      <button
-                        onClick={() => setShowMenu((prev) => !prev)}
-                        aria-label="Note options"
-                        className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
-                      >
-                        <FontAwesomeIcon icon={faEllipsisVertical} />
-                      </button>
+                  <div className="mb-1 ml-auto flex items-center">
+                    <button
+                      onClick={handleToggleSave}
+                      title={
+                        savedIds.has(note.id)
+                          ? 'Unsave this note'
+                          : 'Save this note'
+                      }
+                      className={`flex h-8 cursor-pointer items-center gap-2 rounded-full px-2 text-sm transition-all active:text-[13px] ${
+                        savedIds.has(note.id)
+                          ? 'text-amber-500'
+                          : 'text-slate-500 hover:text-amber-500'
+                      }`}
+                    >
+                      <span className="text-[14px]">{saveCount}</span>
+                      <FontAwesomeIcon
+                        icon={savedIds.has(note.id) ? faStarSolid : faStar}
+                        size="lg"
+                      />
+                    </button>
 
-                      {showMenu && (
-                        <div className="absolute right-0 z-10 mt-1 w-36 overflow-hidden rounded-md border border-slate-200 bg-white shadow-lg">
-                          <button
-                            onClick={() => {
-                              setShowMenu(false)
-                              navigate(`/notes/${id}/edit`)
-                            }}
-                            className="block w-full cursor-pointer px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
-                          >
-                            Edit Note
-                          </button>
-                          <button
-                            onClick={() => {
-                              setShowMenu(false)
-                              handleDelete()
-                            }}
-                            className="block w-full cursor-pointer px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-                          >
-                            Delete Note
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                    {/* Kebab menu */}
+                    {note.user_id === user?.id && (
+                      <div className="relative" ref={menuRef}>
+                        <button
+                          onClick={() => setShowMenu((prev) => !prev)}
+                          aria-label="Note options"
+                          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
+                        >
+                          <FontAwesomeIcon
+                            icon={faEllipsisVertical}
+                            size="lg"
+                          />
+                        </button>
+
+                        {showMenu && (
+                          <div className="absolute right-0 z-10 mt-1 w-36 overflow-hidden rounded-md border border-slate-200 bg-white shadow-lg">
+                            <button
+                              onClick={() => {
+                                setShowMenu(false)
+                                navigate(`/notes/${id}/edit`)
+                              }}
+                              className="block w-full cursor-pointer px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                            >
+                              Edit Note
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShowMenu(false)
+                                handleDelete()
+                              }}
+                              className="block w-full cursor-pointer px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                            >
+                              Delete Note
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {activeTab === 'details' && (
                   <div className="flex flex-col gap-3 pt-1">
-                    <h1 className="font-serif text-3xl font-medium">
+                    <h1 className="font-serif text-3xl font-medium text-slate-900">
                       {note.title}
                     </h1>
 

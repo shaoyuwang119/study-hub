@@ -35,7 +35,7 @@ type PageSource =
   | { source: 'existing'; index: number }
   | { source: 'new'; file: File; pageIndex: number }
 
-type PageEntry = { id: string; thumbnail: string } & PageSource
+type PageEntry = { id: string; thumbnail: string | null } & PageSource
 
 const MAX_PDF_SIZE = 50 * 1024 * 1024
 
@@ -70,6 +70,26 @@ async function renderPdfThumbnails(
   return thumbnails
 }
 
+async function renderPdfThumbnailsProgressive(
+  source: { url: string } | { data: ArrayBuffer },
+  onPageCount: (total: number) => void,
+  onPageRendered: (index: number, thumbnail: string) => void
+): Promise<void> {
+  const pdf = await pdfjsLib.getDocument(source).promise
+  onPageCount(pdf.numPages)
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i)
+    const viewport = page.getViewport({ scale: 0.35 })
+    const canvas = document.createElement('canvas')
+    canvas.width = viewport.width
+    canvas.height = viewport.height
+    const context = canvas.getContext('2d')!
+    await page.render({ canvasContext: context, canvas, viewport }).promise
+    onPageRendered(i - 1, canvas.toDataURL())
+  }
+}
+
 function SortablePage({
   entry,
   displayPosition,
@@ -92,11 +112,17 @@ function SortablePage({
       <span className="w-5 text-center text-xs text-slate-400">
         {displayPosition + 1}
       </span>
-      <img
-        src={entry.thumbnail}
-        alt={`Page ${displayPosition + 1}`}
-        className="max-h-32 max-w-25 border border-slate-200"
-      />
+      {entry.thumbnail ? (
+        <img
+          src={entry.thumbnail}
+          alt={`Page ${displayPosition + 1}`}
+          className="max-h-32 max-w-25 border border-slate-200"
+        />
+      ) : (
+        <div className="flex h-32 w-25 animate-pulse items-center justify-center border border-slate-200 bg-slate-100 text-xs text-slate-400">
+          Loading...
+        </div>
+      )}
       <button
         type="button"
         onClick={(e) => {
@@ -198,22 +224,26 @@ function NoteEditPage() {
   useEffect(() => {
     if (state.status !== 'ready') return
 
-    setLoadingFiles(true)
-    renderPdfThumbnails({ url: state.note.content_url }, (current, total) =>
-      setPageProgress({ current, total })
-    )
-      .then((thumbnails) => {
+    renderPdfThumbnailsProgressive(
+      { url: state.note.content_url },
+      (total) => {
         setPages(
-          thumbnails.map((thumbnail, index) =>
-            attachId({ thumbnail, source: 'existing', index })
+          Array.from({ length: total }, (_, index) =>
+            attachId({ thumbnail: null, source: 'existing' as const, index })
           )
         )
-        originalPageCountRef.current = thumbnails.length
-      })
-      .finally(() => {
-        setLoadingFiles(false)
-        setPageProgress(null)
-      })
+        originalPageCountRef.current = total
+      },
+      (index, thumbnail) => {
+        setPages((prev) =>
+          prev.map((entry) =>
+            entry.source === 'existing' && entry.index === index
+              ? { ...entry, thumbnail }
+              : entry
+          )
+        )
+      }
+    )
   }, [state])
 
   const justSavedRef = useRef(false)
@@ -524,7 +554,7 @@ function NoteEditPage() {
               <div className="flex items-center gap-2 text-slate-500">
                 <label
                   title="Add files"
-                  className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-slate-300 text-sea-teal hover:bg-slate-50 ${loadingFiles ? 'pointer-events-none opacity-50' : ''}`}
+                  className={`text-sea-teal flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-slate-300 hover:bg-slate-50 ${loadingFiles ? 'pointer-events-none opacity-50' : ''}`}
                 >
                   <FontAwesomeIcon icon={faPlus} />
                   <input
@@ -590,21 +620,33 @@ function NoteEditPage() {
         {/* Right column - note metadata */}
         <div className="flex flex-1 flex-col gap-3">
           <div className="-mb-1 text-lg text-slate-600">Title</div>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="-mt-1 rounded-lg border border-slate-300 bg-white p-2 font-serif text-2xl font-medium text-slate-800 focus:outline-slate-300"
-          />
+          <div className="relative -mt-1">
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={70}
+              className="w-full rounded-lg border border-slate-300 bg-white p-2 pr-16 font-serif text-2xl font-medium text-slate-800 focus:outline-slate-300"
+            />
+            <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-slate-400">
+              {title.length}/70
+            </span>
+          </div>
 
           <div className="-mb-1 text-lg text-slate-600">Subject</div>
           <SubjectCombobox value={subjectId} onChange={setSubjectId} />
 
           <div className="-mb-1 text-lg text-slate-600">Description</div>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="flex-1 resize-none rounded-lg border border-slate-300 bg-white p-2 text-slate-800 focus:outline-slate-300"
-          />
+          <div className="relative flex-1">
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={500}
+              className="h-full w-full resize-none rounded-lg border border-slate-300 bg-white p-2 text-slate-800 focus:outline-slate-300"
+            />
+            <span className="pointer-events-none absolute right-3 bottom-2 rounded bg-white/80 px-1 text-xs text-slate-400">
+              {description.length}/500
+            </span>
+          </div>
 
           <div className="flex gap-3">
             <button
@@ -616,7 +658,7 @@ function NoteEditPage() {
             <button
               onClick={handleSave}
               disabled={saving || loadingFiles}
-              className="cursor-pointer rounded-md bg-sea-teal px-4 py-2 text-sm text-white hover:bg-sea-teal-dark disabled:opacity-50"
+              className="bg-sea-teal hover:bg-sea-teal-dark cursor-pointer rounded-md px-4 py-2 text-sm text-white disabled:opacity-50"
             >
               {saving ? 'Saving...' : 'Save'}
             </button>
