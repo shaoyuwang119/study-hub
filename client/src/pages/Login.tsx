@@ -37,11 +37,11 @@ function FloatingInput({
         onChange={(e) => onChange(e.target.value)}
         required
         minLength={minLength}
-        className="peer block w-full rounded-lg border border-slate-300 bg-white px-3 pt-4 pb-1.5 text-sm text-slate-900 focus:border-sea-teal focus:outline-none"
+        className="peer focus:border-sea-teal block w-full rounded-lg border border-slate-300 bg-white px-3 pt-4 pb-1.5 text-sm text-slate-900 focus:outline-none"
       />
       <label
         htmlFor={id}
-        className="absolute inset-s-3 top-2 z-10 origin-left -translate-y-4 scale-75 bg-white px-1 text-sm text-slate-500 duration-150 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:scale-100 peer-focus:top-2! peer-focus:-translate-y-4! peer-focus:scale-75! peer-focus:text-sea-teal"
+        className="peer-focus:text-sea-teal absolute inset-s-3 top-2 z-10 origin-left -translate-y-4 scale-75 bg-white px-1 text-sm text-slate-500 duration-150 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:scale-100 peer-focus:top-2! peer-focus:-translate-y-4! peer-focus:scale-75!"
       >
         {label}
       </label>
@@ -128,7 +128,7 @@ function Login() {
       </h1>
 
       <p className="mt-4 text-slate-700">
-        Your notes. Your classes. Your community.
+        Organized and accessible notes for your studies.
       </p>
 
       <br></br>
@@ -208,7 +208,7 @@ function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="transition-shadows mt-1 flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-sea-teal px-4 py-2 text-white duration-200 hover:bg-sea-teal-dark hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+            className="transition-shadows bg-sea-teal hover:bg-sea-teal-dark mt-1 flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-md px-4 py-2 text-white duration-200 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? (
               <FontAwesomeIcon icon={faSpinner} spin />
