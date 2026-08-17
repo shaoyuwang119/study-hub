@@ -11,7 +11,7 @@ function NoteCardMini({ note }: NoteCardMiniProps) {
         {note.title}
       </h3>
       <p className="mt-0.5 truncate text-xs text-slate-400">
-        {note.subject} · {note.author}
+        {note.subject?.name} · {note.author}
       </p>
     </div>
   )

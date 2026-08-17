@@ -90,6 +90,7 @@ function Profile() {
               note={note}
               isSaved={savedIds.has(note.id)}
               onToggleSave={toggleSave}
+              authorLabel="Last updated"
             />
           </Link>
         ))}

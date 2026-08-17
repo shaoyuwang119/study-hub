@@ -53,7 +53,7 @@ function SubjectCombobox({
           setQuery('')
         }}
         placeholder={placeholder}
-        className={`w-full rounded-lg border border-slate-300 px-2 py-2 focus:border-slate-300 focus:outline-none ${
+        className={`w-full rounded-lg border border-slate-300 px-2 py-2 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none ${
           selected ? 'text-slate-800' : 'text-slate-400'
         }`}
       />

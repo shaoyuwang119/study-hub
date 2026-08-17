@@ -123,7 +123,9 @@ function Login() {
 
   return (
     <div className="flex h-screen flex-col items-center bg-slate-50 p-6 font-sans">
-      <h1 className="mt-26 font-serif text-4xl font-bold">StudyNote</h1>
+      <h1 className="text-sea-navy mt-26 font-serif text-4xl font-bold">
+        StudyNote
+      </h1>
 
       <p className="mt-4 text-slate-700">
         Your notes. Your classes. Your community.

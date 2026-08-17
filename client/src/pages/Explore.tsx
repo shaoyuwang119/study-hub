@@ -1,27 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { NoteCard } from '@/components'
+import { NoteCard, Title } from '@/components'
 import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { useSavedNotes } from '@/lib/useSavedNotes'
+import { resolveAuthors } from '@/lib/resolveAuthors'
 
 const NOTES_PER_SECTION = 8
-
-async function resolveAuthors(notes: Note[]): Promise<Note[]> {
-  const userIds = [...new Set(notes.map((note) => note.user_id))]
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, display_name')
-    .in('id', userIds)
-
-  const authorById = new Map(profiles?.map((p) => [p.id, p.display_name]))
-  return notes.map((note) => ({
-    ...note,
-    author: authorById.get(note.user_id) ?? note.author,
-  }))
-}
 
 function Explore() {
   const [popularNotes, setPopularNotes] = useState<Note[]>([])
@@ -103,14 +90,10 @@ function Explore() {
   return (
     <div className="flex h-full flex-1">
       <div className="flex-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-gutter-stable flex-col overflow-y-auto bg-slate-50 p-6">
-        <div className="mb-6">
-          <div className="font-serif text-4xl font-medium text-slate-900">
-            Explore
-          </div>
-          <p className="mt-1 text-sm text-slate-500">
-            {/* Discover notes shared by the community */}
-          </p>
-        </div>
+        <Title
+          title="Explore"
+          description="Discover notes made by the community"
+        />
 
         {error && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">

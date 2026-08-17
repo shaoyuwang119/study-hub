@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 
+/* Enables class-based dark mode: add/remove `.dark` on <html> (see Sidebar's
+   theme toggle) instead of following the OS's prefers-color-scheme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* "Gentle Sea Breeze" light theme palette - swap these to re-theme the app */
 @theme {
   --color-sea-navy: #022b3a;
@@ -13,7 +17,37 @@
   --font-serif: 'Fraunces', ui-serif, Georgia, serif;
 }
 
-body {
-  margin: 0;
-  font-family: var(--font-sans);
+/* "Gentle Sea Breeze" dark theme - same hue family (navy/teal), inverted
+   lightness. Because the whole app is built from just sea-*, slate-*, and
+   white, redefining those three families here re-themes every component
+   automatically - no component files need dark: classes added. */
+.dark {
+  --color-sea-navy: #eaf6fb;
+  --color-sea-teal: #3fb6cc;
+  --color-sea-teal-dark: #6cd0e0;
+  --color-sea-teal-light: #2f5560;
+  --color-sea-sky: #163a46;
+  --color-sea-lavender: #22314a;
+
+  --color-white: #0f2933;
+
+  --color-slate-50: #0a1e26;
+  --color-slate-100: #123039;
+  --color-slate-200: #1c3f49;
+  --color-slate-300: #2a505a;
+  --color-slate-400: #5c8290;
+  --color-slate-500: #82a3ae;
+  --color-slate-600: #a9c3cb;
+  --color-slate-700: #c3d7dc;
+  --color-slate-800: #ddecef;
+  --color-slate-900: #eef6f8;
+  --color-slate-950: #f7fbfc;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50;
+    margin: 0;
+    font-family: var(--font-sans);
+  }
 }

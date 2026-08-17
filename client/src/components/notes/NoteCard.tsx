@@ -21,6 +21,7 @@ type NoteCardProps = {
   note: Note
   isSaved: boolean
   onToggleSave: (noteId: number, isSaved: boolean) => void
+  authorLabel?: string
 }
 
 const icons: Record<string, IconDefinition> = {
@@ -34,7 +35,12 @@ const icons: Record<string, IconDefinition> = {
   Athletic: faPersonSwimming,
 }
 
-function NoteCard({ note, isSaved, onToggleSave }: NoteCardProps) {
+function NoteCard({
+  note,
+  isSaved,
+  onToggleSave,
+  authorLabel,
+}: NoteCardProps) {
   const icon = (note.subject && icons[note.subject.category]) || faBook
   const color = getCategoryColor(note.subject?.category)
 
@@ -59,20 +65,18 @@ function NoteCard({ note, isSaved, onToggleSave }: NoteCardProps) {
 
   return (
     <div
-      className={`flex h-24 w-md cursor-pointer flex-col overflow-hidden rounded-lg border border-l-4 border-slate-200 p-2.5 transition-shadow duration-100 hover:shadow-sm ${color.accent} ${color.wash}`}
+      className={`flex h-20 w-md cursor-pointer flex-col overflow-hidden rounded-lg border border-slate-200 p-2.5 transition-colors duration-200 ${color.hoverBg}`}
     >
       <div className="flex h-full gap-3">
-        <div
-          className={`flex h-full items-center border-r-2 ${color.text} pr-3`}
-        >
+        <div className={`my-1 flex h-full`}>
           <FontAwesomeIcon
             icon={icon}
-            className={`shrink-0 text-lg ${color.text}`}
+            className={`shrink-0 text-xl ${color.text}`}
           />
         </div>
         <div className="flex h-full flex-1 flex-col">
-          <div className="flex items-start justify-between gap-2">
-            <p className="line-clamp-2 font-serif text-base font-semibold text-slate-800">
+          <div className="flex h-full items-start justify-between gap-2">
+            <p className="line-clamp-2 flex h-full items-start font-sans text-sm font-semibold text-slate-800">
               {note.title}
             </p>
             <span
@@ -81,9 +85,9 @@ function NoteCard({ note, isSaved, onToggleSave }: NoteCardProps) {
               {note.subject?.name}
             </span>
           </div>
-          <div className="mt-auto flex">
-            <p className="mt-1 text-xs font-semibold text-slate-600">
-              {note.author}
+          <div className="flex">
+            <p className="text-xs font-semibold text-slate-600">
+              {authorLabel ?? note.author}
               <span className="text-slate-400"> • {displayTime}</span>
             </p>
 

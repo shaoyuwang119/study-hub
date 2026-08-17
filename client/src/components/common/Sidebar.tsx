@@ -41,7 +41,14 @@ function Sidebar({ profile }: SidebarProps) {
   const canMinimize = location.pathname.startsWith('/notes/')
   const isMinimized = canMinimize && !isHovered
 
-  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isDarkMode] = useState(() =>
+    document.documentElement.classList.contains('dark')
+  )
+
+  function toggleTheme() {
+    localStorage.setItem('theme', isDarkMode ? 'light' : 'dark')
+    window.location.reload()
+  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -68,7 +75,7 @@ function Sidebar({ profile }: SidebarProps) {
           className={({ isActive }) =>
             `flex h-10 items-center gap-3 rounded-xl px-1 py-2 text-sm transition-colors duration-200 ${
               isActive
-                ? 'bg-sea-teal-dark text-sea-lavender font-medium'
+                ? 'bg-sea-teal-dark font-medium text-white'
                 : 'hover:bg-sea-lavender text-slate-600'
             }`
           }
@@ -112,7 +119,7 @@ function Sidebar({ profile }: SidebarProps) {
               className={({ isActive }) =>
                 `flex h-10 items-center gap-4 rounded-xl px-2 py-2 text-sm transition-colors duration-200 ${
                   isActive
-                    ? 'bg-sea-teal-dark text-sea-lavender font-medium'
+                    ? 'bg-sea-teal-dark font-medium text-white'
                     : 'hover:bg-sea-lavender text-slate-600'
                 }`
               }
@@ -134,7 +141,8 @@ function Sidebar({ profile }: SidebarProps) {
         </nav>
 
         <button
-          onClick={() => setIsDarkMode((prev) => !prev)}
+          onClick={toggleTheme}
+          title="Reloads the page to apply the theme"
           className="mt-auto flex h-10 w-full cursor-pointer items-center gap-4 rounded-xl px-2 py-2 text-sm text-slate-600 transition-colors duration-100 hover:bg-slate-100"
         >
           <FontAwesomeIcon

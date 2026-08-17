@@ -1,14 +1,18 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { ProtectedRoute } from '@/components'
 
-import Explore from '@/pages/Explore'
-import Home from '@/pages/Home'
-import Login from '@/pages/Login'
-import NotePage from '@/pages/NotePage'
-import Profile from '@/pages/Profile'
-import NotFound from '@/pages/NotFound'
-import Library from '@/pages/Library'
-import NoteEditPage from '@/pages/NoteEditPage'
+import {
+  Explore,
+  Home,
+  Library,
+  Login,
+  NoteEditPage,
+  NotePage,
+  NotFound,
+  Profile,
+  Search,
+  Settings,
+} from '@/pages'
 
 const router = createBrowserRouter([
   // Public routes
@@ -24,6 +28,8 @@ const router = createBrowserRouter([
       { path: '/library', element: <Library /> },
       { path: '/notes/:id/edit', element: <NoteEditPage /> },
       { path: '/notes/:id', element: <NotePage /> },
+      { path: '/search', element: <Search /> },
+      { path: '/settings', element: <Settings /> },
       { path: '*', element: <NotFound /> },
     ],
   },

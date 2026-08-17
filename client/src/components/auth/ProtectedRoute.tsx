@@ -6,10 +6,6 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { Sidebar, Header, UploadModal } from '@/components'
 
-export type LayoutContext = {
-  searchQuery: string
-}
-
 export type Profile = {
   name: string
   email: string
@@ -21,7 +17,6 @@ export default function ProtectedRoute() {
   const navigate = useNavigate()
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
   const [profile, setProfile] = useState<Profile>({ name: '', email: '' })
   const [showUpload, setShowUpload] = useState(false)
 
@@ -114,14 +109,12 @@ export default function ProtectedRoute() {
   return (
     <div className="flex h-screen flex-col font-sans">
       <Header
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
         profileName={profile.name}
         onCreateClick={() => setShowUpload(true)}
       />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar profile={profile} />
-        <Outlet context={{ searchQuery } satisfies LayoutContext} />
+        <Outlet />
       </div>
       <UploadModal
         open={showUpload}
