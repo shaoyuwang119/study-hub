@@ -5,6 +5,7 @@ import {
   faBookBookmark,
   faMagnifyingGlass,
   faBell,
+  faRightFromBracket,
 } from '@fortawesome/free-solid-svg-icons'
 import { faSquarePlus } from '@fortawesome/free-regular-svg-icons'
 
@@ -32,10 +33,33 @@ export default function Header({ profileName, onCreateClick }: HeaderProps) {
   const [noteSuggestions, setNoteSuggestions] = useState<NoteSuggestion[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
 
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const profileMenuRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     setQuery('')
     setIsOpen(false)
   }, [location.pathname])
+
+  useEffect(() => {
+    function handleClickOutsideProfile(event: MouseEvent) {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowProfileMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutsideProfile)
+    return () =>
+      document.removeEventListener('mousedown', handleClickOutsideProfile)
+  }, [])
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    navigate('/login')
+  }
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -190,16 +214,30 @@ export default function Header({ profileName, onCreateClick }: HeaderProps) {
           <FontAwesomeIcon icon={faBell} />
         </button>
 
-        <div
-          onClick={() => navigate('/profile')}
-          className="transition:color flex h-10 cursor-pointer items-center gap-3 rounded-full px-1 duration-200 hover:bg-slate-100"
-        >
-          <div className="bg-sea-sky text-sea-teal-dark flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
-            {profileName ? profileName.charAt(0).toUpperCase() : '?'}
+        <div className="relative" ref={profileMenuRef}>
+          <div
+            onClick={() => setShowProfileMenu((prev) => !prev)}
+            className="flex h-10 cursor-pointer items-center gap-3 rounded-full px-1 transition-colors duration-200 hover:bg-slate-100"
+          >
+            <div className="bg-sea-sky text-sea-teal-dark flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
+              {profileName ? profileName.charAt(0).toUpperCase() : '?'}
+            </div>
+            <span className="mr-2 text-sm font-medium whitespace-nowrap text-slate-900">
+              {profileName || 'Loading...'}
+            </span>
           </div>
-          <span className="mr-2 text-sm font-medium whitespace-nowrap text-slate-900">
-            {profileName || 'Loading...'}
-          </span>
+
+          {showProfileMenu && (
+            <div className="absolute right-0 z-20 mt-2 w-40 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+              <button
+                onClick={handleLogout}
+                className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+              >
+                <FontAwesomeIcon icon={faRightFromBracket} />
+                Log out
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

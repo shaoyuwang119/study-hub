@@ -197,6 +197,10 @@ function NoteEditPage() {
   // Fetch note data on mount
   useEffect(() => {
     async function fetchNote() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
       const { data, error } = await supabase
         .from('notes')
         .select('*, subject:subjects(id, name, category)')
@@ -211,6 +215,15 @@ function NoteEditPage() {
         })
         return
       }
+
+      if (data.user_id !== user?.id) {
+        setState({
+          status: 'error',
+          message: "You don't have permission to edit this note.",
+        })
+        return
+      }
+
       setState({ status: 'ready', note: data })
       setTitle(data.title)
       setSubjectId(data.subject_id)

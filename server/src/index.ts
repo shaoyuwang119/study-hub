@@ -86,19 +86,15 @@ app.post(
     }
 
     if (title.length > TITLE_MAX_LENGTH) {
-      return res
-        .status(400)
-        .json({
-          error: `Title must be ${TITLE_MAX_LENGTH} characters or fewer`,
-        })
+      return res.status(400).json({
+        error: `Title must be ${TITLE_MAX_LENGTH} characters or fewer`,
+      })
     }
 
     if (description && description.length > DESCRIPTION_MAX_LENGTH) {
-      return res
-        .status(400)
-        .json({
-          error: `Description must be ${DESCRIPTION_MAX_LENGTH} characters or fewer`,
-        })
+      return res.status(400).json({
+        error: `Description must be ${DESCRIPTION_MAX_LENGTH} characters or fewer`,
+      })
     }
 
     if (!files || files.length === 0) {
@@ -263,6 +259,12 @@ app.post(
 
     if (noteError || !note) {
       return res.status(404).json({ error: 'Note not found!' })
+    }
+
+    if (note.user_id !== req.user!.id) {
+      return res
+        .status(403)
+        .json({ error: 'You do not have permission to edit this note.' })
     }
 
     let resultBytes: Uint8Array
@@ -434,9 +436,8 @@ app.post(
 )
 
 // Update only a note's metadata (title/subject/description) - used when the
-// client detects the pages/files weren't touched, so this skips downloading
-// the original PDF, rebuilding it, re-uploading it, and regenerating the
-// preview entirely.
+// client detects the pages/files weren't touched, so it doesn't reload the
+// entire pdf
 app.patch('/api/notes/:id', requireAuth, async (req: AuthedRequest, res) => {
   const { id } = req.params
   const { title, subject_id, description } = req.body
@@ -446,6 +447,22 @@ app.patch('/api/notes/:id', requireAuth, async (req: AuthedRequest, res) => {
   }
 
   const supabaseClient = getRequestScopedClient(req)
+
+  const { data: note, error: noteError } = await supabaseClient
+    .from('notes')
+    .select('user_id')
+    .eq('id', id)
+    .single()
+
+  if (noteError || !note) {
+    return res.status(404).json({ error: 'Note not found!' })
+  }
+
+  if (note.user_id !== req.user!.id) {
+    return res
+      .status(403)
+      .json({ error: 'You do not have permission to edit this note.' })
+  }
 
   const { error } = await supabaseClient
     .from('notes')
