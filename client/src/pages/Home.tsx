@@ -15,6 +15,9 @@ import { supabase } from '@/lib/supabase'
 import type { Note } from '@/types'
 import { usePageTitle } from '@/lib/usePageTitle'
 
+import { faSquarePlus } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+
 function Home() {
   const navigate = useNavigate()
   const [notes, setNotes] = useState<Note[]>([])
@@ -136,13 +139,14 @@ function Home() {
 
   return (
     <div className="flex h-screen flex-1">
-      <div className="flex-1 flex-col overflow-y-auto bg-zinc-50 p-6">
+      <div className="flex-1 scrollbar-thin scrollbar-thumb-zinc-300 scrollbar-gutter-stable flex-col overflow-y-auto bg-zinc-50 p-6">
         <div className="mb-4 flex flex-row justify-between">
           <div className="text-4xl font-medium text-zinc-900">Home</div>
           <button
             onClick={() => setShowUpload(true)}
-            className="transition-shadows w-40 cursor-pointer rounded-md bg-blue-500 px-4 py-2 text-white duration-200 hover:bg-blue-600 hover:shadow-sm"
+            className="transition-shadows w-fit cursor-pointer rounded-md bg-blue-500 px-4 py-2 text-white duration-200 hover:bg-blue-600 hover:shadow-sm"
           >
+            <FontAwesomeIcon icon={faSquarePlus} className="mr-2" />
             Upload Notes
           </button>
         </div>

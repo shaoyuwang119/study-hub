@@ -1,16 +1,16 @@
 ﻿import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faBookBookmark,
   faHouse,
   faCompass,
-  faUser,
   faRightFromBracket,
   faBookOpen,
 } from '@fortawesome/free-solid-svg-icons'
 
 import { supabase } from '@/lib/supabase'
+import { faSquarePlus } from '@fortawesome/free-regular-svg-icons'
 
 type SidebarItem = {
   label: string
@@ -22,16 +22,45 @@ const sidebarItems: SidebarItem[] = [
   { label: 'Home', page: '/', icon: faHouse },
   { label: 'Explore', page: '/explore', icon: faCompass },
   // { label: 'Library', page: '/library', icon: faBookOpen },
-  { label: 'Profile', page: '/profile', icon: faUser },
 ]
 
 function Sidebar() {
   const navigate = useNavigate()
   const location = useLocation()
   const [isHovered, setIsHovered] = useState(false)
+  const [profile, setProfile] = useState({ name: '', email: '' })
+  const [isProfileHovered, setIsProfileHovered] = useState(false)
 
   const canMinimize = location.pathname.startsWith('/notes/')
   const isMinimized = canMinimize && !isHovered
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) return
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', user.id)
+        .single()
+
+      setProfile({
+        name: data?.display_name || '',
+        email: user.email || '',
+      })
+    }
+
+    fetchProfile()
+  }, [])
+
+  useEffect(() => {
+    console.log(profile.name)
+    console.log(profile)
+  }, [profile])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -60,7 +89,7 @@ function Sidebar() {
               className="mr-1.5"
             ></FontAwesomeIcon>
             <span
-              className={`whitespace-nowrap transition-opacity duration-200 ${
+              className={`overflow-hidden whitespace-nowrap transition-opacity duration-200 ${
                 isMinimized ? 'opacity-0' : 'opacity-100'
               }`}
             >
@@ -68,6 +97,57 @@ function Sidebar() {
             </span>
           </h1>
         </NavLink>
+
+        <div
+          onClick={() => navigate('/profile')}
+          onMouseEnter={() => {
+            setIsHovered(true)
+            setIsProfileHovered(true)
+          }}
+          onMouseLeave={() => setIsProfileHovered(false)}
+          className="mb-4 flex h-12 cursor-pointer items-center gap-3 rounded-lg px-1 hover:bg-zinc-100"
+        >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-600">
+            {profile.name ? profile.name.charAt(0).toUpperCase() : '?'}
+          </div>
+
+          <div>
+            <div
+              className={`overflow-hidden text-sm font-medium whitespace-nowrap text-zinc-900 transition-opacity duration-200 ${
+                isMinimized ? 'opacity-0' : 'opacity-100'
+              }`}
+            >
+              {profile.name || 'Loading...'}
+            </div>
+          </div>
+
+          {isProfileHovered && !isMinimized && (
+            <button
+              onClick={async (e) => {
+                e.stopPropagation()
+                await handleLogout()
+              }}
+              title="Log out"
+              className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-200 hover:text-zinc-900"
+            >
+              <FontAwesomeIcon icon={faRightFromBracket} size="sm" />
+            </button>
+          )}
+        </div>
+
+        <button
+          // onClick={() => setShowUpload(true)}
+          className="mb-3 flex h-10 w-full cursor-pointer items-center gap-3 rounded-lg bg-blue-400 px-2 py-2 text-sm text-white duration-200 hover:bg-blue-600"
+        >
+          <FontAwesomeIcon icon={faSquarePlus} size="lg" className="shrink-0" />
+          <span
+            className={`overflow-hidden whitespace-nowrap transition-opacity duration-200 ${
+              isMinimized ? 'opacity-0' : 'opacity-100'
+            }`}
+          >
+            Upload Notes
+          </span>
+        </button>
 
         <nav onMouseEnter={() => setIsHovered(true)} className="space-y-1">
           {sidebarItems.map((item) => (
@@ -89,7 +169,7 @@ function Sidebar() {
                 className="w-4 shrink-0"
               />
               <span
-                className={`whitespace-nowrap transition-opacity duration-200 ${
+                className={`overflow-hidden whitespace-nowrap transition-opacity duration-200 ${
                   isMinimized ? 'opacity-0' : 'opacity-100'
                 }`}
               >
@@ -98,25 +178,6 @@ function Sidebar() {
             </NavLink>
           ))}
         </nav>
-        <button
-          onClick={handleLogout}
-          title="Log out"
-          onMouseEnter={() => setIsHovered(true)}
-          className={`mt-auto flex h-10 w-full cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-left text-sm font-medium text-zinc-600 hover:bg-zinc-100`}
-        >
-          <FontAwesomeIcon
-            size="lg"
-            icon={faRightFromBracket}
-            className="w-4 shrink-0"
-          />
-          <span
-            className={`whitespace-nowrap transition-opacity duration-200 ${
-              isMinimized ? 'opacity-0' : 'opacity-100'
-            }`}
-          >
-            Log out
-          </span>
-        </button>
       </aside>
     </div>
   )
