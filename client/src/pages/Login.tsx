@@ -170,7 +170,7 @@ function Login() {
           {isSignUp && (
             <FloatingInput
               id="name"
-              label="Name"
+              label="Real Name"
               type="text"
               value={displayName}
               onChange={setDisplayName}
