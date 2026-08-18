@@ -51,3 +51,9 @@
     font-family: var(--font-sans);
   }
 }
+
+/* Applied momentarily by Sidebar's toggleTheme() while swapping .dark, so
+   no element can get visually stuck mid-transition on its pre-toggle color. */
+.theme-transitioning * {
+  transition: none !important;
+}

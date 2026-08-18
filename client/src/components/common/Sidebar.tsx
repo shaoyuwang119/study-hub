@@ -41,13 +41,27 @@ function Sidebar({ profile }: SidebarProps) {
   const canMinimize = location.pathname.startsWith('/notes/')
   const isMinimized = canMinimize && !isHovered
 
-  const [isDarkMode] = useState(() =>
+  const [isDarkMode, setIsDarkMode] = useState(() =>
     document.documentElement.classList.contains('dark')
   )
 
   function toggleTheme() {
-    localStorage.setItem('theme', isDarkMode ? 'light' : 'dark')
-    window.location.reload()
+    const root = document.documentElement
+    const next = !isDarkMode
+
+    // Momentarily disable every transition in the app so nothing gets stuck
+    // mid-transition when the sea-*/slate-*/white variables swap under
+    // .dark - then re-enable once the new colors have actually painted.
+    root.classList.add('theme-transitioning')
+    root.classList.toggle('dark', next)
+    localStorage.setItem('theme', next ? 'dark' : 'light')
+    setIsDarkMode(next)
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        root.classList.remove('theme-transitioning')
+      })
+    })
   }
 
   const handleLogout = async () => {
@@ -142,7 +156,7 @@ function Sidebar({ profile }: SidebarProps) {
 
         <button
           onClick={toggleTheme}
-          title="Reloads the page to apply the theme"
+          title="Toggle light/dark theme"
           className="mt-auto flex h-10 w-full cursor-pointer items-center gap-4 rounded-xl px-2 py-2 text-sm text-slate-600 transition-colors duration-100 hover:bg-slate-100"
         >
           <FontAwesomeIcon

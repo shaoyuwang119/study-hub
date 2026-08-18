@@ -17,6 +17,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { faStar as faStarRegular } from '@fortawesome/free-regular-svg-icons'
 
+import { formatNoteTime } from '@/lib/formatNoteTime'
+
 type NoteCardProps = {
   note: Note
   isSaved: boolean
@@ -35,12 +37,7 @@ const icons: Record<string, IconDefinition> = {
   Athletic: faPersonSwimming,
 }
 
-function NoteCard({
-  note,
-  isSaved,
-  onToggleSave,
-  authorLabel,
-}: NoteCardProps) {
+function NoteCard({ note, isSaved, onToggleSave, authorLabel }: NoteCardProps) {
   const icon = (note.subject && icons[note.subject.category]) || faBook
   const color = getCategoryColor(note.subject?.category)
 
@@ -57,11 +54,8 @@ function NoteCard({
     onToggleSave(note.id, optimisticSaved)
   }
 
-  const [time, setTime] = useState<Date>(
-    new Date(note.updated_at ?? note.created_at)
-  )
-
-  const displayTime = time.toLocaleDateString()
+  const time = new Date(note.updated_at ?? note.created_at)
+  const displayTime = formatNoteTime(time)
 
   return (
     <div
@@ -88,7 +82,7 @@ function NoteCard({
           <div className="flex">
             <p className="text-xs font-semibold text-slate-600">
               {authorLabel ?? note.author}
-              <span className="text-slate-400"> • {displayTime}</span>
+              <span className="text-slate-400"> • updated {displayTime}</span>
             </p>
 
             <button

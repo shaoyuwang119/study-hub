@@ -20,6 +20,8 @@ import { faStar } from '@fortawesome/free-regular-svg-icons'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { useSavedNotes } from '@/lib/useSavedNotes'
 
+import { formatNoteTime } from '@/lib/formatNoteTime'
+
 type FetchState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
@@ -174,16 +176,9 @@ function NotePage() {
         )
       case 'ready': {
         const { note } = state
-        const publishedDate = new Date(note.created_at).toLocaleDateString(
-          undefined,
-          { year: 'numeric', month: 'long', day: 'numeric' }
-        )
+        const publishedDate = formatNoteTime(new Date(note.created_at))
         const editedDate = note.updated_at
-          ? new Date(note.updated_at).toLocaleDateString(undefined, {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })
+          ? formatNoteTime(new Date(note.updated_at))
           : null
 
         return (
@@ -199,7 +194,7 @@ function NotePage() {
               <button
                 onClick={() => setIsExpanded((prev) => !prev)}
                 aria-label={isExpanded ? 'Exit fullscreen' : 'Expand preview'}
-                className="absolute right-8 bottom-4 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+                className="absolute right-8 bottom-4 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-black/50 text-gray-100 hover:bg-black/70"
               >
                 <FontAwesomeIcon icon={isExpanded ? faCompress : faExpand} />
               </button>
@@ -313,11 +308,11 @@ function NotePage() {
                       Author: {note.author}
                     </p>
                     <p className="text-sm text-slate-600">
-                      Date published: {publishedDate}
+                      Published: {publishedDate}
                     </p>
                     {editedDate && (
                       <p className="text-sm text-slate-600">
-                        Date edited: {editedDate}
+                        Edited: {editedDate}
                       </p>
                     )}
                     {fileSize !== null && (

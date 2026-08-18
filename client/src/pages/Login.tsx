@@ -60,6 +60,7 @@ function Login() {
   const [loading, setLoading] = useState(true)
 
   const [message, setMessage] = useState('')
+  const [error, setError] = useState(false)
 
   usePageTitle(isSignUp ? 'Sign Up | StudyNote' : 'Log In | StudyNote')
 
@@ -81,15 +82,18 @@ function Login() {
     setIsSignUp(signUp)
     setMessage('')
     setPassword('')
+    setError(false)
     setConfirmPassword('')
   }
 
   async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault()
+    setError(false)
     setMessage('')
 
     if (isSignUp && password !== confirmPassword) {
       setMessage('Passwords do not match.')
+      setError(true)
       return
     }
 
@@ -103,16 +107,19 @@ function Login() {
         })
       : await supabase.auth.signInWithPassword({ email, password })
 
-    if (data.session) {
-      console.log(data.session.access_token)
-    }
+    // if (data.session) {
+    //   console.log(data.session.access_token)
+    // }
 
     if (error) {
       setMessage(error.message)
+      setError(true)
     } else if (isSignUp) {
       if (data.user?.identities?.length === 0) {
         setMessage('An account with this email already exists.')
+        setError(true)
       } else {
+        setError(false)
         setMessage('Check your email to confirm your account.')
       }
     }
@@ -220,7 +227,13 @@ function Login() {
           </button>
         </form>
 
-        {message && <p className="mt-4 text-sm text-red-600">{message}</p>}
+        {message && (
+          <p
+            className={`mt-4 text-sm ${error ? 'text-red-600' : 'text-amber-500'}`}
+          >
+            {message}
+          </p>
+        )}
       </div>
     </div>
   )
