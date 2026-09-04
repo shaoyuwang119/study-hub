@@ -40,15 +40,15 @@ function LoginDoodles() {
         <path d="M 1120 470 A 40 40 0 0 0 1114 449" strokeWidth="1.5" />
 
         {/* vinculum over the discriminant, and the fraction bar */}
-        <path d="M 641 705 Q 700 703 757 705" strokeWidth="1.5" />
+        <path d="M 641 696 Q 700 694 757 696" strokeWidth="1.5" />
         <path d="M 556 733 Q 660 731 762 733" />
 
         {/* bar of the 1/n² summand */}
         <path d="M 386 760 Q 404 759 422 760" strokeWidth="1.5" />
 
         {/* the answer, underlined twice, the way you would in a notebook */}
-        <path d="M 1074 790 Q 1120 788 1166 790" strokeWidth="1.5" />
-        <path d="M 1074 796 Q 1120 795 1166 797" strokeWidth="1.5" />
+        <path d="M 1074 790 Q 1103 788 1132 790" strokeWidth="1.5" />
+        <path d="M 1074 796 Q 1103 795 1132 797" strokeWidth="1.5" />
       </g>
 
       <g fill="currentColor" className="font-hand" stroke="none" fontSize="34">
@@ -106,10 +106,10 @@ function LoginDoodles() {
           f(x) dx
         </text>
 
-        <text x="1244" y="702" fontSize="64">
+        <text x="1228" y="702" fontSize="64">
           π
         </text>
-        <text x="1216" y="734" fontSize="28">
+        <text x="1204" y="736" fontSize="26">
           3.14159…
         </text>
 
