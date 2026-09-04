@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom'
 
 import type { Session } from '@supabase/supabase-js'
 
-import { Header } from '@/components'
+import { Header, LoginDoodles } from '@/components'
 import { supabase } from '@/lib/supabase'
 
 import { faSpinner } from '@fortawesome/free-solid-svg-icons'
@@ -129,18 +129,20 @@ function Login() {
   }
 
   return (
-    <div className="flex h-screen flex-col items-center bg-slate-50 p-6 font-sans">
-      <h1 className="text-sea-navy mt-26 font-serif text-4xl font-bold">
+    <div className="login-backdrop relative flex h-screen flex-col items-center overflow-hidden bg-slate-50 p-6 font-sans">
+      <LoginDoodles />
+
+      <h1 className="text-sea-navy relative mt-26 font-serif text-4xl font-bold">
         StudyNote
       </h1>
 
-      <p className="mt-4 text-slate-700">
+      <p className="relative mt-4 text-slate-700">
         Organized and accessible notes for your studies.
       </p>
 
       <br></br>
 
-      <div className="mb-15 w-full max-w-sm rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="relative mb-15 w-full max-w-sm rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
         <div className="mb-6 flex rounded-lg bg-slate-100 p-1 text-sm font-medium">
           <button
             type="button"

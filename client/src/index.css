@@ -15,6 +15,11 @@
 
   --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
   --font-serif: 'Fraunces', ui-serif, Georgia, serif;
+
+  /* Handwriting, for the login doodles. Caveat has no glyphs for the math
+     symbols (∑ ∫ √ π θ ∞ ≈ ±), so Fraunces is chained behind it to catch
+     them - a deliberate fallback instead of whatever the OS would pick. */
+  --font-hand: 'Caveat', 'Fraunces', ui-serif, Georgia, serif;
 }
 
 /* "Gentle Sea Breeze" dark theme - same hue family (navy/teal), inverted
@@ -52,8 +57,19 @@
   }
 }
 
-/* Applied momentarily by Sidebar's toggleTheme() while swapping .dark, so
-   no element can get visually stuck mid-transition on its pre-toggle color. */
+.login-backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--color-slate-300) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-slate-300) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.3;
+}
+
+/* Prevents elements from getting stuck mid-transition when users switch themes. */
 .theme-transitioning * {
   transition: none !important;
 }
